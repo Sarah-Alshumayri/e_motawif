@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'login_page.dart';
 
 class SignUpPage extends StatefulWidget {
   @override
@@ -6,8 +9,8 @@ class SignUpPage extends StatefulWidget {
 }
 
 class _SignUpPageState extends State<SignUpPage> {
-  bool _obscurePassword = true; // Track password visibility
-  String? _selectedIdType; // Stores selected ID type
+  bool _obscurePassword = true;
+  String? _selectedIdType;
   final TextEditingController _idNumberController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -25,44 +28,48 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  // Function to validate all fields before sign-up
-  void _attemptSignUp() {
-    if (_nameController.text.isEmpty) {
-      _showError("Name is required.");
-      return;
-    }
-    if (_emailController.text.isEmpty) {
-      _showError("E-Mail is required.");
-      return;
-    }
-    if (_passwordController.text.isEmpty) {
-      _showError("Password is required.");
-      return;
-    }
-    if (_phoneController.text.isEmpty) {
-      _showError("Phone Number is required.");
-      return;
-    }
-    if (_selectedIdType == null) {
-      _showError("Please select an Identification Type.");
-      return;
-    }
-    if (_idNumberController.text.isEmpty) {
-      _showError("ID Number for $_selectedIdType is required.");
-      return;
-    }
-    if (_dobController.text.isEmpty) {
-      _showError("Date of Birth is required.");
+  // Function to attempt sign-up by sending data to the backend
+  Future<void> _attemptSignUp() async {
+    const String apiUrl =
+        "http://192.168.56.1/e_motawif_new/sign_up.php"; // Replace with actual API URL
+
+    if (_nameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty ||
+        _phoneController.text.isEmpty ||
+        _selectedIdType == null ||
+        _idNumberController.text.isEmpty ||
+        _dobController.text.isEmpty) {
+      _showError("All fields are required.");
       return;
     }
 
-    // If all fields are valid, proceed with sign-up
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Sign-up successful!"),
-        backgroundColor: Colors.green,
-      ),
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "name": _nameController.text.trim(),
+        "email": _emailController.text.trim(),
+        "password": _passwordController.text.trim(),
+        "phone": _phoneController.text.trim(),
+        "id_type": _selectedIdType,
+        "id_number": _idNumberController.text.trim(),
+        "dob": _dobController.text.trim(),
+      }),
     );
+
+    final data = jsonDecode(response.body);
+    if (data['status'] == 'success') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("Sign-up successful!"),
+            backgroundColor: Colors.green),
+      );
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (_) => LoginPage()));
+    } else {
+      _showError(data['message']);
+    }
   }
 
   // Function to show Date Picker
@@ -76,8 +83,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
     if (pickedDate != null) {
       setState(() {
-        _dobController.text =
-            "${pickedDate.toLocal()}".split(' ')[0]; // Formats the date
+        _dobController.text = "${pickedDate.toLocal()}".split(' ')[0];
       });
     }
   }
@@ -85,7 +91,7 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D4A45), // Background color
+      backgroundColor: const Color(0xFF0D4A45),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
         child: Center(
@@ -94,7 +100,6 @@ class _SignUpPageState extends State<SignUpPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 40),
-                // Logo Positioned at the Top-Left
                 Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
@@ -108,7 +113,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                // Title
                 const Text(
                   "Create New Account",
                   style: TextStyle(
@@ -118,7 +122,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Name Field
                 TextField(
                   controller: _nameController,
                   decoration: InputDecoration(
@@ -132,7 +135,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Email Field
                 TextField(
                   controller: _emailController,
                   decoration: InputDecoration(
@@ -146,7 +148,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Password Field with Visibility Toggle
                 TextField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
@@ -163,8 +164,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                       onPressed: () {
                         setState(() {
-                          _obscurePassword =
-                              !_obscurePassword; // Toggle password visibility
+                          _obscurePassword = !_obscurePassword;
                         });
                       },
                     ),
@@ -175,7 +175,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Phone Number Field
                 TextField(
                   controller: _phoneController,
                   decoration: InputDecoration(
@@ -189,7 +188,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Identification Type Dropdown
                 DropdownButtonFormField<String>(
                   decoration: InputDecoration(
                     filled: true,
@@ -213,7 +211,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   hint: const Text("Select Identification Type"),
                 ),
                 const SizedBox(height: 20),
-                // ID Number Field (Appears only when an ID type is selected)
                 if (_selectedIdType != null)
                   TextField(
                     controller: _idNumberController,
@@ -228,7 +225,6 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
                 const SizedBox(height: 20),
-                // Date of Birth Field with Date Picker
                 TextField(
                   controller: _dobController,
                   readOnly: true,
@@ -247,7 +243,6 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
                 const SizedBox(height: 30),
-                // Sign-Up Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -270,11 +265,13 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                // Log In Link
                 Center(
                   child: GestureDetector(
                     onTap: () {
-                      Navigator.pop(context);
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => LoginPage()),
+                      );
                     },
                     child: const Text(
                       "Have an account? Log In",

@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'login_page.dart';
-import 'startup_session_page.dart';
+import 'signup_page.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -32,19 +30,14 @@ class _SplashScreenState extends State<SplashScreen>
     // Start the animation
     _controller.forward();
 
-    // Timer to check login state and navigate accordingly
+    // Timer to navigate to SignUpPage
     Timer(
       const Duration(seconds: 3),
-      () async {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        String? userRole = prefs.getString('userRole');
-
+      () {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => userRole != null
-                ? StartupSessionPage(userRole: userRole)
-                : LoginPage(),
+            builder: (context) => SignUpPage(),
           ),
         );
       },

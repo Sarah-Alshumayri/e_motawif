@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'E-Motawif',
       theme: ThemeData(primarySwatch: Colors.teal),
-      home: SplashScreen(), // ✅ Show Splash Screen first
+      home: SplashScreen(),
     );
   }
 }

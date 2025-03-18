@@ -13,8 +13,8 @@ class _LostFoundPageState extends State<LostFoundPage> {
   final TextEditingController _dateTimeController = TextEditingController();
 
   bool isReportingFound = true;
-  List<Map<String, dynamic>> _matchingItems = [];
-  bool _noMatchesFound = false; // Track when no matches are found
+  List<dynamic> _matchingItems = [];
+  bool _noMatchesFound = false;
 
   void _submitReport() async {
     print("Submitting item...");
@@ -36,13 +36,13 @@ class _LostFoundPageState extends State<LostFoundPage> {
     }
 
     try {
-      await DatabaseHelper.instance.insertItem({
-        'itemName': itemName,
-        'description': description,
-        'location': location,
-        'date': date,
-        'status': status,
-      });
+      String response = await DatabaseHelper().reportItem(
+        "user_id_here", // Replace with the actual user ID
+        itemName,
+        description,
+        location,
+        status,
+      );
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -80,15 +80,25 @@ class _LostFoundPageState extends State<LostFoundPage> {
       return;
     }
 
-    List<Map<String, dynamic>> matchedItems =
-        await DatabaseHelper.instance.searchMatchingItems(searchItem);
+    try {
+      List<dynamic> matchedItems =
+          await DatabaseHelper().searchLostItem(searchItem);
 
-    setState(() {
-      _matchingItems = matchedItems;
-      _noMatchesFound = matchedItems.isEmpty; // Set flag if no match found
-    });
+      setState(() {
+        _matchingItems = matchedItems;
+        _noMatchesFound = matchedItems.isEmpty;
+      });
 
-    print("Search results: $_matchingItems");
+      print("Search results: $_matchingItems");
+    } catch (e) {
+      print("Search error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Failed to search. Try again."),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -191,7 +201,7 @@ class _LostFoundPageState extends State<LostFoundPage> {
               ),
             ),
             const SizedBox(height: 20),
-            if (!isReportingFound) // Only show results when searching
+            if (!isReportingFound)
               Expanded(
                 child: _matchingItems.isNotEmpty
                     ? ListView.builder(
@@ -228,7 +238,7 @@ class _LostFoundPageState extends State<LostFoundPage> {
                                   color: Colors.red),
                             ),
                           )
-                        : const SizedBox(), // Show nothing initially
+                        : const SizedBox(),
               ),
           ],
         ),
