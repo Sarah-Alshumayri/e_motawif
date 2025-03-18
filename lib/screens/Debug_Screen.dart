@@ -4,7 +4,7 @@ import 'signup_page.dart';
 import 'forgot_password_page.dart';
 import 'splash_screen.dart';
 import 'services_page.dart'; // Import the new screen
-import 'sos_emergency_user.dart'; // Import the SOS page
+import 'sos_emergency_user.dart'; // Import the SOS page1
 import 'sos_emergency_motiwf_page.dart';
 import 'lost_found_page.dart';
 import 'startup_session_page.dart'; // Import the Startup Session Page
