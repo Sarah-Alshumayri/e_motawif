@@ -6,7 +6,7 @@ import 'splash_screen.dart';
 import 'services_page.dart'; // Import the new screen
 import 'sos_emergency_user.dart'; // Import the SOS page
 import 'sos_emergency_motiwf_page.dart';
-//import 'lost_found_page.dart';
+import 'lost_found_page.dart';
 import 'startup_session_page.dart'; // Import the Startup Session Page
 import 'ritual_guidance_page.dart';
 import 'customer_support_page.dart';
@@ -23,7 +23,7 @@ class DebugScreen extends StatelessWidget {
     {'name': 'Login Page', 'widget': LoginPage()},
     {'name': 'Sign-Up Page', 'widget': SignUpPage()},
     {'name': 'Forgot Password Page', 'widget': ForgotPasswordPage()},
-    {'name': 'Services Page', 'widget': ServicesPage()},
+    //{'name': 'Services Page', 'widget': ServicesPage()},
     {'name': 'SOS Emergency Page', 'widget': SOSEmergencyPage()},
     {'name': 'SOS Emergency Page (Motiwf)', 'widget': SOSEmergencyMotiwfPage()},
     //{'name': 'Lost & Found Page', 'widget': LostFoundPage()},

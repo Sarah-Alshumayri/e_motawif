@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'signup_page.dart'; // Ensure this file exists
-import 'forgot_password_page.dart'; // Ensure this file exists
+import 'package:shared_preferences/shared_preferences.dart';
+import 'signup_page.dart';
+import 'forgot_password_page.dart';
+import 'startup_session_page.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -19,10 +21,11 @@ class _LoginPageState extends State<LoginPage> {
     });
   }
 
-  void _attemptLogin() {
+  Future<void> _attemptLogin() async {
+    String userID = _idController.text.trim();
     String errorMessage = "";
 
-    if (_idController.text.isEmpty) {
+    if (userID.isEmpty) {
       errorMessage = "ID or Passport Number is required.";
     } else if (_passwordController.text.isEmpty) {
       errorMessage = "Password is required.";
@@ -32,44 +35,46 @@ class _LoginPageState extends State<LoginPage> {
 
     if (errorMessage.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
       );
       return;
     }
 
-    // Handle login logic here (if all required fields are filled)
+    String userRole = userID.startsWith('E') ? 'Motawif' : 'Pilgrim';
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userRole', userRole);
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => StartupSessionPage(userRole: userRole),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D4A45), // Background color
+      backgroundColor: const Color(0xFF0D4A45),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 40), // Moves everything slightly down
-            // Logo Positioned at the Top-Left
+            const SizedBox(height: 40),
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.start, // Moves logo to the left
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(
-                      top: 10, left: 0), // Adjusted position
+                  padding: const EdgeInsets.only(top: 10, left: 0),
                   child: Image.asset(
-                    'assets/images/e_motawif_logo.png', // Ensure this asset exists
-                    height: 130, // Bigger logo for better visibility
+                    'assets/images/e_motawif_logo.png',
+                    height: 130,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 20),
-            // Welcome Text
             const Text(
               "Hi! Welcome Back,",
               style: TextStyle(
@@ -79,7 +84,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             const SizedBox(height: 20),
-            // ID or Passport Number Input Field
             TextField(
               controller: _idController,
               decoration: InputDecoration(
@@ -93,7 +97,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             const SizedBox(height: 20),
-            // Password Input Field
             TextField(
               controller: _passwordController,
               obscureText: _obscurePassword,
@@ -115,7 +118,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             const SizedBox(height: 10),
-            // Remember Me and Forgot Password Row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -130,10 +132,8 @@ class _LoginPageState extends State<LoginPage> {
                       },
                       activeColor: Colors.teal,
                     ),
-                    const Text(
-                      "Remember Me",
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    const Text("Remember Me",
+                        style: TextStyle(color: Colors.white)),
                   ],
                 ),
                 GestureDetector(
@@ -141,8 +141,7 @@ class _LoginPageState extends State<LoginPage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ForgotPasswordPage(),
-                      ),
+                          builder: (context) => ForgotPasswordPage()),
                     );
                   },
                   child: const Text(
@@ -156,13 +155,12 @@ class _LoginPageState extends State<LoginPage> {
               ],
             ),
             const SizedBox(height: 30),
-            // Login Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _attemptLogin,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.yellow, // Login button color
+                  backgroundColor: Colors.yellow,
                   padding: const EdgeInsets.symmetric(vertical: 15.0),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10.0),
@@ -179,15 +177,12 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             const SizedBox(height: 20),
-            // Sign-Up Link
             Center(
               child: GestureDetector(
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => SignUpPage(),
-                    ),
+                    MaterialPageRoute(builder: (context) => SignUpPage()),
                   );
                 },
                 child: const Text(

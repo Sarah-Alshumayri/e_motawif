@@ -1,34 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/services_page.dart';
 import '../database_helper.dart';
+import 'screens/login_page.dart';
+import 'screens/startup_session_page.dart';
+import 'screens/splash_screen.dart'; // ✅ Added import for Splash Screen
+import 'screens/motawif_sidebar_menu.dart';
 
 void main() async {
-  WidgetsFlutterBinding
-      .ensureInitialized(); // Ensures Flutter is fully initialized
+  WidgetsFlutterBinding.ensureInitialized();
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? userRole = prefs.getString('userRole');
 
-  // Initialize Hive
-  await Hive.initFlutter();
-
-  // Ensure the database is initialized before starting the app
-  await DatabaseHelper.instance.database;
-
-  runApp(const MyApp());
+  runApp(MyApp(userRole: userRole));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String? userRole;
+  MyApp({this.userRole});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Flutter App',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-        useMaterial3: true,
-      ),
-      home: const ServicesPage(), // Set ServicesPage as the starting page
+      title: 'E-Motawif',
+      theme: ThemeData(primarySwatch: Colors.teal),
+      home: SplashScreen(), // ✅ Show Splash Screen first
     );
   }
 }

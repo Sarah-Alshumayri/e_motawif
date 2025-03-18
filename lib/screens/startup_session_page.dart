@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'login_page.dart';
+import 'services_page.dart'; // ✅ Import Services Page
+import 'motawif_sidebar_menu.dart'; // ✅ Import Sidebar Menu Hub for Motawif
 
 class StartupSessionPage extends StatefulWidget {
   final String userRole;
-  final String motawifName; // Added Motawif information for Pilgrims
-  final List<String>
-      assignedPilgrims; // Added list of assigned pilgrims for Motawif
+  final String motawifName;
+  final List<String> assignedPilgrims;
 
   const StartupSessionPage({
     Key? key,
     required this.userRole,
-    this.motawifName = "Motawif Ahmed", // Example Motawif name
-    this.assignedPilgrims = const [
-      "Pilgrim A",
-      "Pilgrim B",
-      "Pilgrim C"
-    ], // Example pilgrims
+    this.motawifName = "Motawif Ahmed",
+    this.assignedPilgrims = const ["Pilgrim A", "Pilgrim B", "Pilgrim C"],
   }) : super(key: key);
 
   @override
@@ -23,32 +22,23 @@ class StartupSessionPage extends StatefulWidget {
 
 class StartupSessionPageState extends State<StartupSessionPage> {
   final Color primaryColor = const Color(0xFF0D4A45);
-  late String userRole;
-  bool enableGuidance = false;
-  bool enableNotifications = false;
-  bool enableTracking = false;
-  bool isAvailable = true;
-  String selectedLanguage = "English";
-
-  List<String> sessionPilgrims = [];
-
-  @override
-  void initState() {
-    super.initState();
-    userRole = widget.userRole;
-    sessionPilgrims = List.from(widget.assignedPilgrims);
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("Welcome, $userRole!",
+        title: Text("Welcome, ${widget.userRole}!",
             style: const TextStyle(color: Colors.white)),
         backgroundColor: primaryColor,
         centerTitle: true,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: () => _logout(context),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -56,40 +46,15 @@ class StartupSessionPageState extends State<StartupSessionPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                userRole == "Pilgrim"
-                    ? "Welcome! Your Motawif is ${widget.motawifName}."
-                    : "Welcome! Ready to assist the pilgrims today?",
-                style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: primaryColor),
-              ),
+              _buildWelcomeMessage(),
               const SizedBox(height: 20),
-              if (userRole == "Motawif") ...[
-                _buildPilgrimsList(),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: _createNewSession,
-                  icon: const Icon(Icons.group_add, color: Colors.white),
-                  label: const Text("Create New Session",
-                      style: TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 20),
-                  ),
-                ),
-              ],
-              if (userRole == "Pilgrim") ...[
-                _buildMotawifInfo(),
-              ],
+              if (widget.userRole == "Motawif") _buildPilgrimsList(),
+              if (widget.userRole == "Motawif") _buildCreateSessionButton(),
+              if (widget.userRole == "Pilgrim") _buildMotawifInfo(),
               const SizedBox(height: 20),
               Center(
                 child: ElevatedButton(
-                  onPressed: () => _navigateToDashboard(context),
+                  onPressed: () => _navigateToNextPage(context),
                   child: const Text("Start My Journey",
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -110,18 +75,42 @@ class StartupSessionPageState extends State<StartupSessionPage> {
     );
   }
 
+  Widget _buildWelcomeMessage() {
+    return Text(
+      widget.userRole == "Pilgrim"
+          ? "Welcome! Your Motawif is ${widget.motawifName}."
+          : "Welcome! Ready to assist the pilgrims today?",
+      style: TextStyle(
+          fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
+    );
+  }
+
   Widget _buildPilgrimsList() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text("Assigned Pilgrims:",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        ...sessionPilgrims.map((pilgrim) => ListTile(
+        ...widget.assignedPilgrims.map((pilgrim) => ListTile(
               leading: const Icon(Icons.person, color: Colors.teal),
               title: Text(pilgrim,
                   style: const TextStyle(fontWeight: FontWeight.bold)),
             )),
       ],
+    );
+  }
+
+  Widget _buildCreateSessionButton() {
+    return ElevatedButton.icon(
+      onPressed: _createNewSession,
+      icon: const Icon(Icons.group_add, color: Colors.white),
+      label: const Text("Create New Session",
+          style: TextStyle(color: Colors.white)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: primaryColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+      ),
     );
   }
 
@@ -150,6 +139,15 @@ class StartupSessionPageState extends State<StartupSessionPage> {
     );
   }
 
+  Future<void> _logout(BuildContext context) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('userRole');
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+    );
+  }
+
   void _createNewSession() {
     showDialog(
       context: context,
@@ -170,7 +168,7 @@ class StartupSessionPageState extends State<StartupSessionPage> {
               onPressed: () {
                 if (pilgrimController.text.isNotEmpty) {
                   setState(() {
-                    sessionPilgrims.add(pilgrimController.text);
+                    widget.assignedPilgrims.add(pilgrimController.text);
                   });
                   Navigator.pop(context);
                 }
@@ -183,13 +181,22 @@ class StartupSessionPageState extends State<StartupSessionPage> {
     );
   }
 
-  void _navigateToDashboard(BuildContext context) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => userRole == "Pilgrim"
-            ? const Placeholder() // Replace with Pilgrim Dashboard
-            : const Placeholder(), // Replace with Motawif Dashboard
-      ),
-    );
+  /// ✅ Updated: Navigates Pilgrims to Service Page & Motawifs to Sidebar Menu Hub
+  void _navigateToNextPage(BuildContext context) {
+    if (widget.userRole == "Pilgrim") {
+      // ✅ Navigate Pilgrim to Services Page
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => ServicesPage(userRole: widget.userRole),
+        ),
+      );
+    } else if (widget.userRole == "Motawif") {
+      // ✅ Navigate Motawif to Sidebar Menu Hub
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => MotawifSidebarMenu(),
+        ),
+      );
+    }
   }
 }

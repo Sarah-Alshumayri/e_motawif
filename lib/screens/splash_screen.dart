@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'welcome_screen.dart'; // New screen before Login Page
+import 'package:shared_preferences/shared_preferences.dart';
+import 'login_page.dart';
+import 'startup_session_page.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -30,14 +32,20 @@ class _SplashScreenState extends State<SplashScreen>
     // Start the animation
     _controller.forward();
 
-    // Timer to navigate to the WelcomeScreen after 7 seconds
+    // Timer to check login state and navigate accordingly
     Timer(
-      const Duration(seconds: 7),
-      () {
+      const Duration(seconds: 3),
+      () async {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String? userRole = prefs.getString('userRole');
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-              builder: (context) => WelcomeScreen()), // New screen
+            builder: (context) => userRole != null
+                ? StartupSessionPage(userRole: userRole)
+                : LoginPage(),
+          ),
         );
       },
     );
