@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'login_page.dart';
 import 'services_page.dart'; // ✅ Import Services Page
 import 'motawif_sidebar_menu.dart'; // ✅ Import Sidebar Menu Hub for Motawif
@@ -24,12 +23,14 @@ class StartupSessionPageState extends State<StartupSessionPage> {
   final Color primaryColor = const Color(0xFF0D4A45);
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("Welcome, ${widget.userRole}!",
-            style: const TextStyle(color: Colors.white)),
+        title:
+            Text("Welcome, ${widget.userRole}!", // ✅ Role correctly displayed
+                style: const TextStyle(color: Colors.white)),
         backgroundColor: primaryColor,
         centerTitle: true,
         elevation: 0,
@@ -48,13 +49,15 @@ class StartupSessionPageState extends State<StartupSessionPage> {
             children: [
               _buildWelcomeMessage(),
               const SizedBox(height: 20),
-              if (widget.userRole == "Motawif") _buildPilgrimsList(),
-              if (widget.userRole == "Motawif") _buildCreateSessionButton(),
-              if (widget.userRole == "Pilgrim") _buildMotawifInfo(),
+              if (widget.userRole == "motawif")
+                _buildPilgrimsList(), // ✅ Ensure Motawif sees only this
+              if (widget.userRole == "motawif") _buildCreateSessionButton(),
+              if (widget.userRole == "pilgrim") _buildMotawifInfo(),
               const SizedBox(height: 20),
               Center(
                 child: ElevatedButton(
-                  onPressed: () => _navigateToNextPage(context),
+                  onPressed: () => _navigateToNextPage(
+                      context), // ✅ Ensure button triggers navigation
                   child: const Text("Start My Journey",
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -139,9 +142,7 @@ class StartupSessionPageState extends State<StartupSessionPage> {
     );
   }
 
-  Future<void> _logout(BuildContext context) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('userRole');
+  void _logout(BuildContext context) {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => LoginPage()),
@@ -183,20 +184,23 @@ class StartupSessionPageState extends State<StartupSessionPage> {
 
   /// ✅ Updated: Navigates Pilgrims to Service Page & Motawifs to Sidebar Menu Hub
   void _navigateToNextPage(BuildContext context) {
-    if (widget.userRole == "Pilgrim") {
-      // ✅ Navigate Pilgrim to Services Page
+    print("🔹 User Role: ${widget.userRole}"); // ✅ Debugging to check role
+    if (widget.userRole == "pilgrim") {
+      print("✅ Navigating to ServicesPage");
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => ServicesPage(userRole: widget.userRole),
         ),
       );
-    } else if (widget.userRole == "Motawif") {
-      // ✅ Navigate Motawif to Sidebar Menu Hub
+    } else if (widget.userRole == "motawif") {
+      print("✅ Navigating to MotawifSidebarMenu");
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => MotawifSidebarMenu(),
         ),
       );
+    } else {
+      print("❌ Error: Unknown user role");
     }
   }
 }

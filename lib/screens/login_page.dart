@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'signup_page.dart';
 import 'forgot_password_page.dart';
 import 'startup_session_page.dart';
@@ -21,19 +20,16 @@ class _LoginPageState extends State<LoginPage> {
         .login(_idController.text.trim(), _passwordController.text.trim());
 
     if (result['status'] == 'success') {
-      if (result['role'] == 'motawif') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => MotawifSidebarMenu()),
-        );
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => StartupSessionPage(userRole: 'pilgrim'),
-          ),
-        );
-      }
+      String role = result['role']
+          .toLowerCase(); // ✅ Ensure role is lowercase for consistency
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              StartupSessionPage(userRole: role), // ✅ Pass userRole correctly
+        ),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(result['message']),

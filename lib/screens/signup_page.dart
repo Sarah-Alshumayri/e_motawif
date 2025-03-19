@@ -30,45 +30,52 @@ class _SignUpPageState extends State<SignUpPage> {
 
   // Function to attempt sign-up by sending data to the backend
   Future<void> _attemptSignUp() async {
-    const String apiUrl =
-        "http://192.168.56.1/e_motawif_new/sign_up.php"; // Replace with actual API URL
+    const String apiUrl = "http://172.20.10.3/e_motawif_new/sign_up.php";
 
-    if (_nameController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _phoneController.text.isEmpty ||
-        _selectedIdType == null ||
-        _idNumberController.text.isEmpty ||
-        _dobController.text.isEmpty) {
-      _showError("All fields are required.");
-      return;
-    }
+    Map<String, dynamic> requestBody = {
+      "name": _nameController.text.trim(),
+      "email": _emailController.text.trim(),
+      "password": _passwordController.text.trim(),
+      "phone": _phoneController.text.trim(),
+      "id_type": _selectedIdType,
+      "id_number": _idNumberController.text.trim(),
+      "dob": _dobController.text.trim(),
+      "role": "pilgrim",
+    };
 
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "name": _nameController.text.trim(),
-        "email": _emailController.text.trim(),
-        "password": _passwordController.text.trim(),
-        "phone": _phoneController.text.trim(),
-        "id_type": _selectedIdType,
-        "id_number": _idNumberController.text.trim(),
-        "dob": _dobController.text.trim(),
-      }),
-    );
+    print("🚀 Sending request to: $apiUrl");
+    print("📜 Request body: ${jsonEncode(requestBody)}");
 
-    final data = jsonDecode(response.body);
-    if (data['status'] == 'success') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("Sign-up successful!"),
-            backgroundColor: Colors.green),
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(requestBody),
       );
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => LoginPage()));
-    } else {
-      _showError(data['message']);
+
+      print("✅ Response status: ${response.statusCode}");
+      print("📩 Response body: ${response.body}");
+
+      final data = jsonDecode(response.body);
+      if (data['status'] == 'success') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Sign-up successful!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => LoginPage()),
+        );
+      } else {
+        _showError(data['message']);
+      }
+    } catch (e) {
+      print("❌ Error: $e");
+      _showError("Network error, please try again.");
     }
   }
 
