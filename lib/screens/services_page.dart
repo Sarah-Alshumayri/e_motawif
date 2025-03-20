@@ -1,3 +1,4 @@
+import 'package:e_motawif_new/screens/pilgrim_profile_page.dart';
 import 'package:flutter/material.dart';
 import 'sos_emergency_user.dart'; // Import the Pilgrims' SOS Emergency Page
 import 'lost_found_page.dart'; // Import the Lost & Found Page
@@ -132,9 +133,14 @@ class _ServicesPageState extends State<ServicesPage> {
           ),
           // Profile Icon
           IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {},
-          ),
+            icon: Icon(Icons.account_circle, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => PilgrimProfilePage()),
+              );
+            },
+          )
         ],
       ),
       backgroundColor: Colors.white,

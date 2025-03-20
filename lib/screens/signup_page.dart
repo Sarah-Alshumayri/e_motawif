@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'login_page.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -28,9 +29,9 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  // Function to attempt sign-up by sending data to the backend
+  // Function to attempt sign-up and store data in SharedPreferences
   Future<void> _attemptSignUp() async {
-    const String apiUrl = "http://172.20.10.3/e_motawif_new/sign_up.php";
+    const String apiUrl = "http://192.168.56.1/e_motawif_new/sign_up.php";
 
     Map<String, dynamic> requestBody = {
       "name": _nameController.text.trim(),
@@ -43,38 +44,38 @@ class _SignUpPageState extends State<SignUpPage> {
       "role": "pilgrim",
     };
 
-    print("🚀 Sending request to: $apiUrl");
-    print("📜 Request body: ${jsonEncode(requestBody)}");
-
     try {
       final response = await http.post(
         Uri.parse(apiUrl),
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: {"Content-Type": "application/json"},
         body: jsonEncode(requestBody),
       );
 
-      print("✅ Response status: ${response.statusCode}");
-      print("📩 Response body: ${response.body}");
-
       final data = jsonDecode(response.body);
       if (data['status'] == 'success') {
+        // ✅ Store user data in SharedPreferences
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        prefs.setString("name", _nameController.text.trim());
+        prefs.setString("email", _emailController.text.trim());
+        prefs.setString("phone", _phoneController.text.trim());
+        prefs.setString("idType", _selectedIdType!);
+        prefs.setString("idNumber", _idNumberController.text.trim());
+        prefs.setString("dob", _dobController.text.trim());
+        prefs.setString("role", "pilgrim");
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Sign-up successful!"),
-            backgroundColor: Colors.green,
-          ),
+              content: Text("Sign-up successful!"),
+              backgroundColor: Colors.green),
         );
+
+        // Navigate to Login Page
         Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => LoginPage()),
-        );
+            context, MaterialPageRoute(builder: (_) => LoginPage()));
       } else {
         _showError(data['message']);
       }
     } catch (e) {
-      print("❌ Error: $e");
       _showError("Network error, please try again.");
     }
   }
@@ -111,188 +112,144 @@ class _SignUpPageState extends State<SignUpPage> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(top: 10, left: 0),
-                      child: Image.asset(
-                        'assets/images/e_motawif_logo.png',
-                        height: 130,
-                      ),
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Image.asset('assets/images/e_motawif_logo.png',
+                          height: 130),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  "Create New Account",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                const Text("Create New Account",
+                    style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white)),
                 const SizedBox(height: 20),
-                TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    hintText: "Name",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
+                _buildTextField(_nameController, "Name"),
                 const SizedBox(height: 20),
-                TextField(
-                  controller: _emailController,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    hintText: "E-Mail",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
+                _buildTextField(_emailController, "E-Mail"),
                 const SizedBox(height: 20),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    hintText: "Password",
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                        color: Colors.black54,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
+                _buildPasswordField(),
                 const SizedBox(height: 20),
-                TextField(
-                  controller: _phoneController,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    hintText: "Phone Number",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
+                _buildTextField(_phoneController, "Phone Number"),
                 const SizedBox(height: 20),
-                DropdownButtonFormField<String>(
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                  items: ["National ID", "Iqama", "Passport"]
-                      .map((type) => DropdownMenuItem<String>(
-                            value: type,
-                            child: Text(type),
-                          ))
-                      .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedIdType = value;
-                    });
-                  },
-                  hint: const Text("Select Identification Type"),
-                ),
+                _buildDropdown(),
                 const SizedBox(height: 20),
                 if (_selectedIdType != null)
-                  TextField(
-                    controller: _idNumberController,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.white,
-                      hintText: "Enter your $_selectedIdType number",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10.0),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
+                  _buildTextField(_idNumberController,
+                      "Enter your $_selectedIdType number"),
                 const SizedBox(height: 20),
-                TextField(
-                  controller: _dobController,
-                  readOnly: true,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    hintText: "Date of Birth",
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.calendar_today),
-                      onPressed: () => _selectDate(context),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
+                _buildDateField(),
                 const SizedBox(height: 30),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _attemptSignUp,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.yellow,
-                      padding: const EdgeInsets.symmetric(vertical: 15.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.0),
-                      ),
-                    ),
-                    child: const Text(
-                      "Sign Up",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ),
+                _buildSignUpButton(),
                 const SizedBox(height: 20),
-                Center(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => LoginPage()),
-                      );
-                    },
-                    child: const Text(
-                      "Have an account? Log In",
-                      style: TextStyle(
-                        color: Colors.white,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ),
+                _buildLoginLink(),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String hintText) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        hintText: hintText,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            borderSide: BorderSide.none),
+      ),
+    );
+  }
+
+  Widget _buildPasswordField() {
+    return TextField(
+      controller: _passwordController,
+      obscureText: _obscurePassword,
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        hintText: "Password",
+        suffixIcon: IconButton(
+          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility,
+              color: Colors.black54),
+          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+        ),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            borderSide: BorderSide.none),
+      ),
+    );
+  }
+
+  Widget _buildDropdown() {
+    return DropdownButtonFormField<String>(
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            borderSide: BorderSide.none),
+      ),
+      items: ["National ID", "Iqama", "Passport"]
+          .map((type) =>
+              DropdownMenuItem<String>(value: type, child: Text(type)))
+          .toList(),
+      onChanged: (value) => setState(() => _selectedIdType = value),
+      hint: const Text("Select Identification Type"),
+    );
+  }
+
+  Widget _buildDateField() {
+    return TextField(
+      controller: _dobController,
+      readOnly: true,
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        hintText: "Date of Birth",
+        suffixIcon: IconButton(
+            icon: const Icon(Icons.calendar_today),
+            onPressed: () => _selectDate(context)),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            borderSide: BorderSide.none),
+      ),
+    );
+  }
+
+  Widget _buildSignUpButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: _attemptSignUp,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.yellow,
+          padding: const EdgeInsets.symmetric(vertical: 15.0),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+        ),
+        child: const Text("Sign Up",
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black)),
+      ),
+    );
+  }
+
+  Widget _buildLoginLink() {
+    return Center(
+      child: GestureDetector(
+        onTap: () => Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (_) => LoginPage())),
+        child: const Text("Have an account? Log In",
+            style: TextStyle(
+                color: Colors.white, decoration: TextDecoration.underline)),
       ),
     );
   }

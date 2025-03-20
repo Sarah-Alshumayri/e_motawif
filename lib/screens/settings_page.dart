@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'login_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final String userRole; // 'Pilgrim' or 'Motawif'
@@ -76,7 +77,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ListTile(
           leading: Icon(Icons.logout, color: Colors.red),
           title: Text("Log Out"),
-          onTap: () => print("Log Out Placeholder"),
+          onTap: () => _logout(context),
         ),
       ],
     );
@@ -145,4 +146,11 @@ class _SettingsPageState extends State<SettingsPage> {
       ),
     );
   }
+}
+
+void _logout(BuildContext context) {
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(builder: (context) => LoginPage()),
+  );
 }

@@ -1,3 +1,4 @@
+import 'package:e_motawif_new/screens/pilgrim_profile_page.dart';
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 import 'services_page.dart'; // ✅ Import Services Page
@@ -39,6 +40,15 @@ class StartupSessionPageState extends State<StartupSessionPage> {
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () => _logout(context),
           ),
+          IconButton(
+            icon: Icon(Icons.account_circle, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => PilgrimProfilePage()),
+              );
+            },
+          )
         ],
       ),
       body: SingleChildScrollView(
