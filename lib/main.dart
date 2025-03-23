@@ -5,6 +5,7 @@ import 'screens/login_page.dart';
 import 'screens/startup_session_page.dart'; // ✅ Pilgrim redirection
 import 'screens/motawif_sidebar_menu.dart'; // ✅ Motawif redirection
 import 'screens/splash_screen.dart';
+import 'screens/help_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

@@ -1,5 +1,18 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart'; // Import the login page
+import 'login_page.dart';
+import 'sos_emergency_user.dart';
+import 'lost_found_page.dart';
+import 'customer_support_page.dart';
+import 'startup_session_page.dart';
+import 'ritual_guidance_page.dart';
+import 'residency_allocation.dart';
+import 'real_time_tracking_page.dart';
+import 'health_monitoring_page.dart';
+import 'settings_page.dart';
+import 'notifications_page.dart';
+import 'help_page.dart';
+import 'task_schedule_page.dart'; // ✅ Import the Task & Schedule Page
+import 'tracking_page.dart';
 
 class MotawifSidebarMenu extends StatelessWidget {
   final Color primaryColor = const Color(0xFF0D4A45);
@@ -17,10 +30,20 @@ class MotawifSidebarMenu extends StatelessWidget {
         centerTitle: true,
         elevation: 0,
         actions: [
+          // ✅ Settings Icon
+          IconButton(
+            icon: const Icon(Icons.settings, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => SettingsPage(userRole: 'motawif')),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () {
-              // Redirect to login page when logout is clicked
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (_) => LoginPage()),
@@ -43,68 +66,98 @@ class MotawifSidebarMenu extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // ✅ 1. Real-Time Tracking (For Pilgrims)
             _buildMenuItem(
               context,
               icon: Icons.map,
               title: "Pilgrim Tracking",
               subtitle: "Monitor and track assigned pilgrims in real-time",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => RealTimeTrackingPage(userRole: 'motawif'),
+                  ),
+                );
+              },
             ),
-
-            // ✅ 2. Health Monitoring
             _buildMenuItem(
               context,
               icon: Icons.health_and_safety,
               title: "Health Monitoring",
               subtitle: "Monitor pilgrims' health status and receive alerts",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => HealthMonitoringPage(userRole: 'motawif'),
+                  ),
+                );
+              },
             ),
-
-            // ✅ 3. Residency Management
             _buildMenuItem(
               context,
               icon: Icons.hotel,
               title: "Residency Management",
               subtitle: "Oversee and update accommodation assignments",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ResidencyAllocationPage(userType: 'motawif'),
+                  ),
+                );
+              },
             ),
-
-            // ✅ 4. SOS Emergency Requests (Received from Pilgrims)
             _buildMenuItem(
               context,
               icon: Icons.sos,
               title: "Emergency Requests",
               subtitle: "Handle SOS alerts from pilgrims",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => SOSEmergencyPage()),
+                );
+              },
             ),
-
-            // ✅ 5. Notifications (Received from Pilgrims)
             _buildMenuItem(
               context,
               icon: Icons.notifications_active,
               title: "Pilgrim Notifications",
               subtitle: "View urgent messages and updates from pilgrims",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => NotificationsPage(userRole: 'motawif'),
+                  ),
+                );
+              },
             ),
-
-            // ✅ 6. Task & Schedule Management
             _buildMenuItem(
               context,
               icon: Icons.schedule,
               title: "Task & Schedule",
               subtitle: "Manage and organize daily responsibilities",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => TaskSchedulePage()),
+                );
+              },
             ),
-
-            // ✅ 7. Communication with Pilgrims
             _buildMenuItem(
               context,
               icon: Icons.chat,
               title: "Pilgrim Communication",
               subtitle: "Contact and assist assigned pilgrims",
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => CustomerSupportPage()),
+                );
+              },
             ),
           ],
         ),

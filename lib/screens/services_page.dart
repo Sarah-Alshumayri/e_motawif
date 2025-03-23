@@ -10,6 +10,8 @@ import 'real_time_tracking_page.dart';
 import 'health_monitoring_page.dart';
 import 'settings_page.dart';
 import 'notifications_page.dart'; // Import the Notifications Page
+import 'help_page.dart'; // ✅ Import the Help Page
+import 'tracking_page.dart';
 
 class ServicesPage extends StatefulWidget {
   final String
@@ -51,7 +53,7 @@ class _ServicesPageState extends State<ServicesPage> {
     {
       "title": "Real-Time Tracking",
       "icon": Icons.location_on,
-      "page": RealTimeTrackingPage(userRole: 'Pilgrim'),
+      "page": TrackingPage(), // Your temporary OpenStreetMap-based page
     },
     {
       "title": "Health Monitoring",
@@ -236,13 +238,20 @@ class _ServicesPageState extends State<ServicesPage> {
                 builder: (context) => SettingsPage(userRole: widget.userRole),
               ),
             );
+          } else if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => HelpPage()), // ✅ Navigates to Help Page
+            );
           }
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
           BottomNavigationBarItem(
               icon: Icon(Icons.settings), label: "Settings"),
-          BottomNavigationBarItem(icon: Icon(Icons.help), label: "Help"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.help), label: "Help"), // ✅ Help Page Icon
         ],
       ),
 
