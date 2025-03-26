@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class DatabaseHelper {
-  static const String serverUrl = "http://172.20.10.3/e_motawif_new";
+  static const String serverUrl = "http://192.168.56.1/e_motawif_new";
 
   // ✅ Login
   Future<Map<String, dynamic>> login(String userId, String password) async {

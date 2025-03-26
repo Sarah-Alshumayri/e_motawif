@@ -31,7 +31,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
   // Function to attempt sign-up and store data in SharedPreferences
   Future<void> _attemptSignUp() async {
-    const String apiUrl = "http://172.20.10.3/e_motawif_new/sign_up.php";
+    const String apiUrl = "http://192.168.56.1/e_motawif_new/sign_up.php";
 
     Map<String, dynamic> requestBody = {
       "name": _nameController.text.trim(),
@@ -125,7 +125,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         fontWeight: FontWeight.bold,
                         color: Colors.white)),
                 const SizedBox(height: 20),
-                _buildTextField(_nameController, "Name"),
+                _buildTextField(_nameController, "First and Last Name"),
                 const SizedBox(height: 20),
                 _buildTextField(_emailController, "E-Mail"),
                 const SizedBox(height: 20),

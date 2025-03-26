@@ -1,11 +1,16 @@
 <?php
+ob_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+header('Content-Type: application/json');
+
 $host = "localhost";
-$user = "root";  // Change this if needed
+$user = "root";
 $password = "";
-$database = "motawif_db";  // Ensure this database exists
+$database = "motawif_db";
 
 $conn = new mysqli($host, $user, $password, $database);
 if ($conn->connect_error) {
-    die(json_encode(["status" => "error", "message" => "Database connection failed"]));
+    echo json_encode(["status" => "error", "message" => "Database connection failed"]);
+    exit();
 }
-?>

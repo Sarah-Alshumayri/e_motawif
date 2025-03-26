@@ -1,6 +1,8 @@
 <?php
+ob_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
+header('Content-Type: application/json');
 include 'config.php';
 
 header("Content-Type: application/json");
@@ -62,4 +64,3 @@ if ($result->num_rows > 0) {
 }
 
 $conn->close();
-?>

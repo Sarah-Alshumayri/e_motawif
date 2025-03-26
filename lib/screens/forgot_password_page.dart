@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class ForgotPasswordPage extends StatefulWidget {
   @override
@@ -20,23 +22,40 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   }
 
   // Function to validate fields before sending
-  void _attemptSend() {
-    if (_idController.text.isEmpty) {
+  Future<void> _attemptSend() async {
+    String userId = _idController.text.trim();
+    String email = _emailOrPhoneController.text.trim();
+
+    if (userId.isEmpty) {
       _showError("ID is required.");
       return;
     }
-    if (_emailOrPhoneController.text.isEmpty) {
-      _showError("Email or Phone Number is required.");
+    if (email.isEmpty) {
+      _showError("Email is required.");
       return;
     }
 
-    // If all fields are valid, proceed with sending reset instructions
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Password reset instructions sent!"),
-        backgroundColor: Colors.green,
-      ),
-    );
+    try {
+      var response = await http.post(
+        Uri.parse("http://192.168.56.1/e_motawif_new/forgot_password.php"),
+        body: {"user_id": userId, "email": email},
+      );
+
+      var result = jsonDecode(response.body);
+
+      if (result['status'] == 'success') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Reset email sent to ${result['email']}"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        _showError(result['message'] ?? "Something went wrong.");
+      }
+    } catch (e) {
+      _showError("Server error: $e");
+    }
   }
 
   @override
@@ -95,7 +114,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: Colors.white,
-                hintText: "Email or Phone Number",
+                hintText: "Email",
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10.0),
                   borderSide: BorderSide.none,
