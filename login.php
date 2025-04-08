@@ -3,7 +3,8 @@ ob_start();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header('Content-Type: application/json');
-include 'config.php';
+
+include 'config.php'; // ✅ DB connection file
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user_id = $_POST["user_id"] ?? '';
@@ -14,7 +15,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
-    // Check if user exists
+    // ✅ Check if user exists
     $stmt = $conn->prepare("SELECT id, role, password FROM users WHERE user_id = ?");
     $stmt->bind_param("s", $user_id);
     $stmt->execute();
@@ -25,17 +26,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $hashedPassword = $user["password"];
         $role = $user["role"];
 
-        // ✅ If user is a pilgrim, use password_verify() for hashed passwords
+        // ✅ Pilgrim: check with password_verify (hashed)
         if ($role === "pilgrim") {
             if (password_verify($password, $hashedPassword)) {
-                echo json_encode(["status" => "success", "role" => $role]);
+                echo json_encode([
+                    "status" => "success",
+                    "role" => $role,
+                    "user_id" => $user_id  // ✅ Return user_id to Flutter
+                ]);
             } else {
                 echo json_encode(["status" => "error", "message" => "Invalid credentials"]);
             }
-        } else { 
-            // ✅ Keep direct password comparison for Motawif
+        } else {
+            // ✅ Motawif: plain text password (not hashed)
             if ($password === $hashedPassword) {
-                echo json_encode(["status" => "success", "role" => $role]);
+                echo json_encode([
+                    "status" => "success",
+                    "role" => $role,
+                    "user_id" => $user_id  // ✅ Return user_id to Flutter
+                ]);
             } else {
                 echo json_encode(["status" => "error", "message" => "Invalid credentials"]);
             }
@@ -46,4 +55,4 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 } else {
     echo json_encode(["status" => "error", "message" => "Invalid request"]);
 }
-
+?>

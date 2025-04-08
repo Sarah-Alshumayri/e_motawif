@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class DatabaseHelper {
-  static const String serverUrl = "http://192.168.56.1/e_motawif_new";
+  static const String serverUrl = "http://172.20.10.3/e_motawif_new";
 
   // ✅ Login
   Future<Map<String, dynamic>> login(String userId, String password) async {
@@ -106,7 +106,32 @@ class DatabaseHelper {
     }
   }
 
-  // Placeholder methods (if needed later)
+  // ✅ Save Movement History to DB
+  static Future<void> saveMovement({
+    required String userId,
+    required double latitude,
+    required double longitude,
+  }) async {
+    print("📡 API CALL: userId=$userId, lat=$latitude, lng=$longitude");
+
+    try {
+      final response = await http.post(
+        Uri.parse("$serverUrl/save_movement.php"),
+        body: {
+          'user_id': userId,
+          'latitude': latitude.toString(),
+          'longitude': longitude.toString(),
+        },
+      );
+
+      print("📬 Status Code: ${response.statusCode}");
+      print("📬 Response Body: ${response.body}");
+    } catch (e) {
+      print("❌ ERROR: $e");
+    }
+  }
+
+  // Placeholder methods
   searchLostItem(String searchItem) {}
 
   reportItem(String userId, String itemName, String description,

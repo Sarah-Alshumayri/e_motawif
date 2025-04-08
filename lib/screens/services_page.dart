@@ -53,7 +53,8 @@ class _ServicesPageState extends State<ServicesPage> {
     {
       "title": "Real-Time Tracking",
       "icon": Icons.location_on,
-      "page": TrackingPage(), // Your temporary OpenStreetMap-based page
+      "page": RealTimeTrackingPage(
+          userRole: 'Pilgrim'), // Your temporary OpenStreetMap-based page
     },
     {
       "title": "Health Monitoring",

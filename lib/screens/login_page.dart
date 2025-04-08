@@ -4,6 +4,7 @@ import 'forgot_password_page.dart';
 import 'startup_session_page.dart';
 import 'motawif_sidebar_menu.dart';
 import '../database_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -20,14 +21,18 @@ class _LoginPageState extends State<LoginPage> {
         .login(_idController.text.trim(), _passwordController.text.trim());
 
     if (result['status'] == 'success') {
-      String role = result['role']
-          .toLowerCase(); // ✅ Ensure role is lowercase for consistency
+      String role = result['role'].toLowerCase();
+      String userId = result['user_id'].toString(); // ✅ <-- THIS IS NEEDED
+
+      // ✅ Save userId to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_id', userId);
+      print("✅ user_id saved to SharedPreferences: $userId");
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) =>
-              StartupSessionPage(userRole: role), // ✅ Pass userRole correctly
+          builder: (_) => StartupSessionPage(userRole: role),
         ),
       );
     } else {
