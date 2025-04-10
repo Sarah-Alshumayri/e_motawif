@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-include 'config.php'; // Ensure this file has DB connection code
+include 'config.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $user_id = $_POST['user_id'] ?? '';
@@ -10,14 +10,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
-    $stmt = $conn->prepare("SELECT name, email, phone, dob, role FROM users WHERE user_id = ?");
+    $stmt = $conn->prepare("SELECT name, email, phone, dob, id_type, user_id, emergencyContact, sickness FROM users WHERE user_id = ?");
     $stmt->bind_param("s", $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result && $result->num_rows > 0) {
-        $userData = $result->fetch_assoc();
-        echo json_encode(["status" => "success", "data" => $userData]);
+        $row = $result->fetch_assoc();
+        echo json_encode([
+            "status" => "success",
+            "data" => [
+                "name" => $row["name"],
+                "email" => $row["email"],
+                "phone" => $row["phone"],
+                "dob" => $row["dob"],
+                "id_type" => $row["id_type"],
+                "user_id" => $row["user_id"],
+                "emergencyContact" => $row["emergencyContact"] ?? "",
+                "sickness" => $row["sickness"] ?? ""
+            ]
+        ]);
     } else {
         echo json_encode(["status" => "error", "message" => "User not found"]);
     }

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class DatabaseHelper {
-  static const String serverUrl = "http://172.20.10.3/e_motawif_new";
+  static const String serverUrl = "http://192.168.56.1/e_motawif_new";
 
   // ✅ Login
   Future<Map<String, dynamic>> login(String userId, String password) async {
@@ -50,6 +50,20 @@ class DatabaseHelper {
           "message": "Server error: ${response.statusCode}"
         };
       }
+    } catch (e) {
+      return {"status": "error", "message": "Failed to connect: $e"};
+    }
+  }
+
+  // ✅ Save Updated User Profile
+  Future<Map<String, dynamic>> saveUserProfile(
+      Map<String, dynamic> data) async {
+    try {
+      var response = await http.post(
+        Uri.parse("$serverUrl/update_user_profile.php"),
+        body: data,
+      );
+      return jsonDecode(response.body);
     } catch (e) {
       return {"status": "error", "message": "Failed to connect: $e"};
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../database_helper.dart';
 
 class PilgrimProfilePage extends StatefulWidget {
   @override
@@ -18,8 +19,8 @@ class _PilgrimProfilePageState extends State<PilgrimProfilePage> {
   bool hasChanges = false;
 
   String name = "";
-  String idType = "";
-  String idNumber = "";
+  String id_type = "";
+  String user_id = "";
   String? selectedSickness;
 
   final List<String> sicknessOptions = [
@@ -38,33 +39,58 @@ class _PilgrimProfilePageState extends State<PilgrimProfilePage> {
 
   Future<void> _loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      name = prefs.getString("name") ?? "Unknown";
-      emailController.text = prefs.getString("email") ?? "";
-      phoneController.text = prefs.getString("phone") ?? "";
-      idType = prefs.getString("idType") ?? "Unknown";
-      idNumber = prefs.getString("idNumber") ?? "Unknown";
-      dobController.text = prefs.getString("dob") ?? "";
-      emergencyContactController.text =
-          prefs.getString("emergencyContact") ?? "";
-      selectedSickness = prefs.getString("sickness") ?? "None";
-    });
+    String? userId = prefs.getString("user_id");
+    if (userId == null) return;
+
+    var result = await DatabaseHelper().getUserProfile(userId);
+    if (result['status'] == 'success') {
+      var user = result['data'];
+      setState(() {
+        name = user['name'] ?? "Unknown";
+        emailController.text = user['email'] ?? "";
+        phoneController.text = user['phone'] ?? "";
+        id_type = user['id_type'] ?? "Unknown";
+        user_id = user['user_id'] ?? "Unknown";
+        dobController.text = user['dob'] ?? "";
+        emergencyContactController.text = user['emergencyContact'] ?? "";
+        selectedSickness = user['sickness'] ?? "None";
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("❌ Failed to load user profile"),
+        backgroundColor: Colors.red,
+      ));
+    }
   }
 
   Future<void> _saveUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setString("email", emailController.text);
-    await prefs.setString("phone", phoneController.text);
-    await prefs.setString("dob", dobController.text);
-    await prefs.setString("emergencyContact", emergencyContactController.text);
-    await prefs.setString("sickness", selectedSickness ?? "None");
+    String? userId = prefs.getString("user_id");
+    if (userId == null) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-          content: Text("Profile updated!"), backgroundColor: Colors.green),
-    );
+    var updatedData = {
+      "user_id": userId,
+      "email": emailController.text,
+      "phone": phoneController.text,
+      "dob": dobController.text,
+      "emergencyContact": emergencyContactController.text,
+      "sickness": selectedSickness ?? "None",
+    };
 
-    setState(() => hasChanges = false);
+    var response = await DatabaseHelper().saveUserProfile(updatedData);
+
+    if (response['status'] == 'success') {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("✅ Profile updated!"),
+        backgroundColor: Colors.green,
+      ));
+      setState(() => hasChanges = false);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("❌ Failed to update profile"),
+        backgroundColor: Colors.red,
+      ));
+    }
   }
 
   void _pickDate() async {
@@ -86,8 +112,7 @@ class _PilgrimProfilePageState extends State<PilgrimProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("My Profile",
-            style: TextStyle(color: Colors.white, fontSize: 24)),
+        title: const Text("My Profile", style: TextStyle(color: Colors.white)),
         backgroundColor: const Color(0xFF0D4A45),
         centerTitle: true,
       ),
@@ -110,9 +135,9 @@ class _PilgrimProfilePageState extends State<PilgrimProfilePage> {
               const SizedBox(height: 12),
               _buildDateField("Date of Birth", dobController),
               const SizedBox(height: 12),
-              _buildStaticField("ID Type", idType),
+              _buildStaticField("ID Type", id_type),
               const SizedBox(height: 12),
-              _buildStaticField("ID Number", idNumber),
+              _buildStaticField("ID Number", user_id),
               const SizedBox(height: 12),
               _buildTextField(emergencyContactController, "Emergency Contact"),
               const SizedBox(height: 12),
@@ -207,9 +232,7 @@ class _PilgrimProfilePageState extends State<PilgrimProfilePage> {
               fontWeight: FontWeight.bold, color: Colors.black, fontSize: 18),
           children: [
             TextSpan(
-              text: value,
-              style: TextStyle(fontWeight: FontWeight.normal),
-            ),
+                text: value, style: TextStyle(fontWeight: FontWeight.normal))
           ],
         ),
       ),
@@ -233,15 +256,12 @@ class _PilgrimProfilePageState extends State<PilgrimProfilePage> {
   Widget _buildDropdownField() {
     return DropdownButtonFormField<String>(
       value: selectedSickness,
-      onChanged: (value) => setState(() => selectedSickness = value),
+      onChanged: (value) => setState(() {
+        selectedSickness = value;
+        hasChanges = true;
+      }),
       items: sicknessOptions
-          .map((s) => DropdownMenuItem(
-                value: s,
-                child: Text(
-                  s,
-                  style: TextStyle(color: Colors.black), // 👈 readable color
-                ),
-              ))
+          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
           .toList(),
       decoration: InputDecoration(
         labelText: "Health Condition",
@@ -249,9 +269,8 @@ class _PilgrimProfilePageState extends State<PilgrimProfilePage> {
         filled: true,
         fillColor: Colors.white,
       ),
-      dropdownColor: Colors.white, // 👈 change dropdown background color
-      style:
-          TextStyle(fontSize: 18, color: Colors.black), // 👈 label text color
+      dropdownColor: Colors.white,
+      style: TextStyle(fontSize: 18, color: Colors.black),
     );
   }
 }
