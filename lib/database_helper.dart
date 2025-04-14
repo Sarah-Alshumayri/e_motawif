@@ -4,6 +4,29 @@ import 'package:http/http.dart' as http;
 class DatabaseHelper {
   static const String serverUrl = "http://172.20.10.3/e_motawif_new";
 
+  // ✅ Reusable POST method for simple APIs
+  static Future<dynamic> postData({
+    required String url,
+    required Map<String, dynamic> body,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$serverUrl/$url"),
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        print("❌ Server error: ${response.statusCode}");
+        return null;
+      }
+    } catch (e) {
+      print("❌ Exception in postData(): $e");
+      return null;
+    }
+  }
+
   // ✅ Login
   Future<Map<String, dynamic>> login(String userId, String password) async {
     try {

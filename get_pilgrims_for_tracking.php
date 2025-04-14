@@ -1,6 +1,5 @@
 <?php
 include 'config.php';
-
 header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -24,11 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $motawifRow = $lookupResult->fetch_assoc();
-    $motawif_db_id = $motawifRow['id']; // numeric ID
+    $motawif_db_id = $motawifRow['id'];
 
-    // Get assigned pilgrims
+    // Get assigned pilgrims with coordinates
     $query = "
-        SELECT u.user_id, u.name
+        SELECT u.user_id, u.name, u.latitude, u.longitude
         FROM motawif_pilgrim mp
         JOIN users u ON mp.pilgrim_id = u.id
         WHERE mp.motawif_id = ?
@@ -41,12 +40,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $pilgrims = [];
     while ($row = $result->fetch_assoc()) {
         $pilgrims[] = [
-            "user_id" => $row['user_id'],
-            "name" => $row['name']
+            "pilgrim_id" => $row['user_id'],
+            "name" => $row['name'],
+            "latitude" => $row['latitude'] ?? null,
+            "longitude" => $row['longitude'] ?? null,
+            "lastSeen" => date("H:i")
         ];
     }
 
-    echo json_encode($pilgrims); // original format
+    echo json_encode(["success" => true, "data" => $pilgrims]);
 
     $stmt->close();
     $lookupStmt->close();

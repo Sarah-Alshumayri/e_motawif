@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:e_motawif_new/database_helper.dart';
 
 class RealTimeTrackingPage extends StatefulWidget {
-  final String userRole; // 'Pilgrim' or 'Motawif'
+  final String userRole;
 
   RealTimeTrackingPage({required this.userRole});
 
@@ -25,13 +25,24 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
   bool hasShownAlert = false;
 
   List<Map<String, dynamic>> movementHistory = [];
-  String? userId; // ✅ Will be loaded from SharedPreferences
+  String? userId;
+
+  List<Map<String, dynamic>> assignedPilgrims = [];
+  String? selectedPilgrimId;
+  LatLng? selectedPilgrimLocation;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
-    _loadUserId(); // ✅ Load user_id on init
+    _loadUserId();
+
+    _refreshTimer = Timer.periodic(Duration(seconds: 5), (timer) {
+      if (widget.userRole == 'Motawif') {
+        fetchAssignedPilgrims();
+      }
+    });
   }
 
   Future<void> _loadUserId() async {
@@ -74,22 +85,13 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
           'lng': currentLocation.longitude,
         });
 
-        print(
-            "🚀 New location: ${currentLocation.latitude}, ${currentLocation.longitude}");
-
         if (userId != null) {
-          print("📤 Sending to database: userId = $userId");
-
           DatabaseHelper.saveMovement(
             userId: userId!,
             latitude: currentLocation.latitude,
             longitude: currentLocation.longitude,
           );
-        } else {
-          print("❌ userId is NULL — can't save movement");
         }
-
-        _mapController.move(currentLocation, _mapController.zoom);
 
         isOutOfBounds = currentLocation.latitude < 21.3850 ||
             currentLocation.latitude > 21.3950 ||
@@ -113,7 +115,7 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("⚠️ Out of Bounds"),
+          title: const Text("\u26a0\ufe0f Out of Bounds"),
           content: const Text(
               "You have exited the safe zone. Please return immediately."),
           actions: [
@@ -144,9 +146,39 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
     });
   }
 
+  Future<void> fetchAssignedPilgrims() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? motawifId = prefs.getString('user_id');
+
+    print("📡 Getting assigned pilgrims for: $motawifId");
+
+    final List<Map<String, dynamic>> result =
+        await DatabaseHelper().getAssignedPilgrims(motawifId ?? "");
+
+    if (result.isNotEmpty) {
+      print("✅ Data: $result");
+
+      setState(() {
+        assignedPilgrims = result.map((p) {
+          return {
+            "id": p['user_id'],
+            "name": p['name'],
+            "lastLat": double.tryParse(p['latitude'] ?? '0') ?? 0.0,
+            "lastLng": double.tryParse(p['longitude'] ?? '0') ?? 0.0,
+            "lastSeen": p['lastSeen'] ?? "Unknown",
+            "status": "Unknown"
+          };
+        }).toList();
+      });
+    } else {
+      print("⚠️ No assigned pilgrims found.");
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
+    _refreshTimer?.cancel();
     super.dispose();
   }
 
@@ -229,7 +261,6 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          flex: 2,
           child: FlutterMap(
             mapController: _mapController,
             options: MapOptions(
@@ -298,28 +329,6 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
     );
   }
 
-  List<Map<String, dynamic>> assignedPilgrims = [
-    {
-      "id": "1",
-      "name": "Ahmed Ali",
-      "lastLat": 21.3891,
-      "lastLng": 39.8579,
-      "lastSeen": "10:30 AM",
-      "status": "Within bounds"
-    },
-    {
-      "id": "2",
-      "name": "Fatima Noor",
-      "lastLat": 21.3925,
-      "lastLng": 39.8610,
-      "lastSeen": "1:00 PM",
-      "status": "Out of bounds"
-    },
-  ]; // Placeholder – will fetch from DB soon
-
-  String? selectedPilgrimId;
-  LatLng? selectedPilgrimLocation;
-
   Widget _buildMotawifView() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -329,13 +338,14 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
         SizedBox(height: 10),
         if (selectedPilgrimLocation != null) ...[
           Text(
-              'Tracking: ${assignedPilgrims.firstWhere((p) => p["id"] == selectedPilgrimId)["name"]}',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            'Tracking: ${assignedPilgrims.firstWhere((p) => p["id"].toString() == selectedPilgrimId)["name"]}',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           Expanded(
             child: FlutterMap(
               mapController: _mapController,
               options: MapOptions(
-                center: selectedPilgrimLocation,
+                center: selectedPilgrimLocation!,
                 zoom: 15,
               ),
               children: [
@@ -371,32 +381,35 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
           )
         ] else
           Expanded(
-            child: ListView.builder(
-              itemCount: assignedPilgrims.length,
-              itemBuilder: (context, index) {
-                final pilgrim = assignedPilgrims[index];
-                return ListTile(
-                  leading: Icon(Icons.person_pin_circle, color: Colors.teal),
-                  title: Text(pilgrim["name"]),
-                  subtitle: Text("Last seen: ${pilgrim["lastSeen"]}"),
-                  trailing: ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        selectedPilgrimId = pilgrim["id"];
-                        selectedPilgrimLocation =
-                            LatLng(pilgrim["lastLat"], pilgrim["lastLng"]);
-                      });
+            child: assignedPilgrims.isEmpty
+                ? Center(child: Text("No pilgrims found."))
+                : ListView.builder(
+                    itemCount: assignedPilgrims.length,
+                    itemBuilder: (context, index) {
+                      final pilgrim = assignedPilgrims[index];
+                      return ListTile(
+                        leading:
+                            Icon(Icons.person_pin_circle, color: Colors.teal),
+                        title: Text(pilgrim["name"]),
+                        subtitle: Text("Last seen: ${pilgrim["lastSeen"]}"),
+                        trailing: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              selectedPilgrimId = pilgrim["id"].toString();
+                              selectedPilgrimLocation = LatLng(
+                                pilgrim["lastLat"],
+                                pilgrim["lastLng"],
+                              );
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.teal),
+                          child: Text("Track",
+                              style: TextStyle(color: Colors.white)),
+                        ),
+                      );
                     },
-                    style:
-                        ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-                    child: Text(
-                      "Track",
-                      style: TextStyle(color: Colors.white),
-                    ),
                   ),
-                );
-              },
-            ),
           ),
       ],
     );
