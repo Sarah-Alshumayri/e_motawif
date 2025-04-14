@@ -298,45 +298,106 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
     );
   }
 
+  List<Map<String, dynamic>> assignedPilgrims = [
+    {
+      "id": "1",
+      "name": "Ahmed Ali",
+      "lastLat": 21.3891,
+      "lastLng": 39.8579,
+      "lastSeen": "10:30 AM",
+      "status": "Within bounds"
+    },
+    {
+      "id": "2",
+      "name": "Fatima Noor",
+      "lastLat": 21.3925,
+      "lastLng": 39.8610,
+      "lastSeen": "1:00 PM",
+      "status": "Out of bounds"
+    },
+  ]; // Placeholder – will fetch from DB soon
+
+  String? selectedPilgrimId;
+  LatLng? selectedPilgrimLocation;
+
   Widget _buildMotawifView() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Pilgrims You Are Tracking',
+        Text('Assigned Pilgrims',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         SizedBox(height: 10),
-        Expanded(
-          child: ListView(
-            children: [
-              ListTile(
-                leading: Icon(Icons.person_pin_circle, color: Colors.teal),
-                title: Text("Ahmed Ali"),
-                subtitle: Text("Last seen: Masjid Al-Haram, 10:30 AM"),
-                trailing: ElevatedButton(
-                  onPressed: () => print("Track Ahmed Placeholder"),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-                  child: Text(
-                    "Track",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
+        if (selectedPilgrimLocation != null) ...[
+          Text(
+              'Tracking: ${assignedPilgrims.firstWhere((p) => p["id"] == selectedPilgrimId)["name"]}',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Expanded(
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                center: selectedPilgrimLocation,
+                zoom: 15,
               ),
-              ListTile(
-                leading: Icon(Icons.person_pin_circle, color: Colors.teal),
-                title: Text("Fatima Noor"),
-                subtitle: Text("Last seen: Mina, 1:00 PM"),
-                trailing: ElevatedButton(
-                  onPressed: () => print("Track Fatima Placeholder"),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-                  child: Text(
-                    "Track",
-                    style: TextStyle(color: Colors.white),
-                  ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'com.example.e_motawif',
                 ),
-              ),
-            ],
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: selectedPilgrimLocation!,
+                      width: 80,
+                      height: 80,
+                      builder: (ctx) => Icon(
+                        Icons.location_on,
+                        color: Colors.teal,
+                        size: 40,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                selectedPilgrimId = null;
+                selectedPilgrimLocation = null;
+              });
+            },
+            child: Text("← Back to list"),
+          )
+        ] else
+          Expanded(
+            child: ListView.builder(
+              itemCount: assignedPilgrims.length,
+              itemBuilder: (context, index) {
+                final pilgrim = assignedPilgrims[index];
+                return ListTile(
+                  leading: Icon(Icons.person_pin_circle, color: Colors.teal),
+                  title: Text(pilgrim["name"]),
+                  subtitle: Text("Last seen: ${pilgrim["lastSeen"]}"),
+                  trailing: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        selectedPilgrimId = pilgrim["id"];
+                        selectedPilgrimLocation =
+                            LatLng(pilgrim["lastLat"], pilgrim["lastLng"]);
+                      });
+                    },
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+                    child: Text(
+                      "Track",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
       ],
     );
   }

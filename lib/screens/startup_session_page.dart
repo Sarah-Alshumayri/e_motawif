@@ -1,19 +1,23 @@
 import 'package:e_motawif_new/screens/pilgrim_profile_page.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+import 'chat_page.dart';
 import 'login_page.dart';
-import 'services_page.dart'; // ✅ Import Services Page
-import 'motawif_sidebar_menu.dart'; // ✅ Import Sidebar Menu Hub for Motawif
+import 'services_page.dart';
+import 'motawif_sidebar_menu.dart';
+import 'pilgrim_dashboard_page.dart'; // 👈 NEW import
 
 class StartupSessionPage extends StatefulWidget {
   final String userRole;
   final String motawifName;
-  final List<String> assignedPilgrims;
 
   const StartupSessionPage({
     Key? key,
     required this.userRole,
     this.motawifName = "Motawif Ahmed",
-    this.assignedPilgrims = const ["Pilgrim A", "Pilgrim B", "Pilgrim C"],
   }) : super(key: key);
 
   @override
@@ -22,16 +26,50 @@ class StartupSessionPage extends StatefulWidget {
 
 class StartupSessionPageState extends State<StartupSessionPage> {
   final Color primaryColor = const Color(0xFF0D4A45);
+  List<Map<String, dynamic>> assignedPilgrims = [];
+  String? selectedPilgrimId;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.userRole == "motawif") {
+      fetchAssignedPilgrims();
+    }
+  }
+
+  Future<void> fetchAssignedPilgrims() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? motawifId = prefs.getString('user_id');
+    if (motawifId == null) return;
+
+    final response = await http.post(
+      Uri.parse('http://10.0.2.2/e_motawif_new/get_assigned_pilgrims.php'),
+      body: {'motawif_id': motawifId},
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> data = json.decode(response.body);
+      setState(() {
+        assignedPilgrims = data
+            .map((e) => {
+                  'user_id': e['user_id'],
+                  'name': e['name'],
+                })
+            .toList();
+      });
+      print('✅ Assigned Pilgrims Loaded: $assignedPilgrims');
+    } else {
+      print('❌ Failed to load pilgrims: ${response.statusCode}');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title:
-            Text("Welcome, ${widget.userRole}!", // ✅ Role correctly displayed
-                style: const TextStyle(color: Colors.white)),
+        title: Text("Welcome, ${widget.userRole}!",
+            style: const TextStyle(color: Colors.white)),
         backgroundColor: primaryColor,
         centerTitle: true,
         elevation: 0,
@@ -41,7 +79,7 @@ class StartupSessionPageState extends State<StartupSessionPage> {
             onPressed: () => _logout(context),
           ),
           IconButton(
-            icon: Icon(Icons.account_circle, color: Colors.white),
+            icon: const Icon(Icons.account_circle, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
@@ -52,37 +90,33 @@ class StartupSessionPageState extends State<StartupSessionPage> {
         ],
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildWelcomeMessage(),
-              const SizedBox(height: 20),
-              if (widget.userRole == "motawif")
-                _buildPilgrimsList(), // ✅ Ensure Motawif sees only this
-              if (widget.userRole == "motawif") _buildCreateSessionButton(),
-              if (widget.userRole == "pilgrim") _buildMotawifInfo(),
-              const SizedBox(height: 20),
-              Center(
-                child: ElevatedButton(
-                  onPressed: () => _navigateToNextPage(
-                      context), // ✅ Ensure button triggers navigation
-                  child: const Text("Start My Journey",
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 14, horizontal: 50),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                  ),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildWelcomeMessage(),
+            const SizedBox(height: 20),
+            if (widget.userRole == "motawif") _buildPilgrimsList(),
+            if (widget.userRole == "motawif") _buildCreateSessionButton(),
+            if (widget.userRole == "pilgrim") _buildMotawifInfo(),
+            const SizedBox(height: 20),
+            Center(
+              child: ElevatedButton(
+                onPressed: () => _navigateToNextPage(context),
+                child: const Text("Start My Journey",
+                    style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 14, horizontal: 50),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -104,10 +138,26 @@ class StartupSessionPageState extends State<StartupSessionPage> {
       children: [
         const Text("Assigned Pilgrims:",
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        ...widget.assignedPilgrims.map((pilgrim) => ListTile(
+        if (assignedPilgrims.isEmpty)
+          const Padding(
+              padding: EdgeInsets.only(top: 8.0),
+              child: Text("No pilgrims assigned yet.")),
+        ...assignedPilgrims.map((p) => ListTile(
               leading: const Icon(Icons.person, color: Colors.teal),
-              title: Text(pilgrim,
+              title: Text(p['name'],
                   style: const TextStyle(fontWeight: FontWeight.bold)),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PilgrimDashboardPage(
+                      pilgrimId: p['user_id'],
+                      pilgrimName: p['name'],
+                    ),
+                  ),
+                );
+              },
             )),
       ],
     );
@@ -115,8 +165,8 @@ class StartupSessionPageState extends State<StartupSessionPage> {
 
   Widget _buildCreateSessionButton() {
     return ElevatedButton.icon(
-      onPressed: _createNewSession,
-      icon: const Icon(Icons.group_add, color: Colors.white),
+      onPressed: _showChatDropdown,
+      icon: const Icon(Icons.chat, color: Colors.white),
       label: const Text("Create New Session",
           style: TextStyle(color: Colors.white)),
       style: ElevatedButton.styleFrom(
@@ -124,6 +174,63 @@ class StartupSessionPageState extends State<StartupSessionPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
       ),
+    );
+  }
+
+  void _showChatDropdown() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Start Chat with Pilgrim"),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return DropdownButton<String>(
+                value: selectedPilgrimId,
+                hint: const Text("Select a pilgrim"),
+                isExpanded: true,
+                items: assignedPilgrims.map((p) {
+                  return DropdownMenuItem<String>(
+                    value: p['user_id'],
+                    child: Text(p['name']),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    selectedPilgrimId = value;
+                  });
+                },
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (selectedPilgrimId != null) {
+                  final selectedPilgrim = assignedPilgrims
+                      .firstWhere((p) => p['user_id'] == selectedPilgrimId);
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChatPage(
+                        motawifId: "MOTAWIF_ID", // optional for now
+                        pilgrimId: selectedPilgrim['user_id'],
+                        pilgrimName: selectedPilgrim['name'],
+                      ),
+                    ),
+                  );
+                }
+              },
+              child: const Text("Start Chat"),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -159,58 +266,19 @@ class StartupSessionPageState extends State<StartupSessionPage> {
     );
   }
 
-  void _createNewSession() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        TextEditingController pilgrimController = TextEditingController();
-        return AlertDialog(
-          title: const Text("Add Pilgrim to Session"),
-          content: TextField(
-            controller: pilgrimController,
-            decoration: const InputDecoration(hintText: "Enter pilgrim name"),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (pilgrimController.text.isNotEmpty) {
-                  setState(() {
-                    widget.assignedPilgrims.add(pilgrimController.text);
-                  });
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text("Add"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// ✅ Updated: Navigates Pilgrims to Service Page & Motawifs to Sidebar Menu Hub
   void _navigateToNextPage(BuildContext context) {
-    print("🔹 User Role: ${widget.userRole}"); // ✅ Debugging to check role
     if (widget.userRole == "pilgrim") {
-      print("✅ Navigating to ServicesPage");
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => ServicesPage(userRole: widget.userRole),
         ),
       );
     } else if (widget.userRole == "motawif") {
-      print("✅ Navigating to MotawifSidebarMenu");
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => MotawifSidebarMenu(),
         ),
       );
-    } else {
-      print("❌ Error: Unknown user role");
     }
   }
 }

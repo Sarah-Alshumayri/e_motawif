@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class DatabaseHelper {
-  static const String serverUrl = "http://192.168.56.1/e_motawif_new";
+  static const String serverUrl = "http://172.20.10.3/e_motawif_new";
 
   // ✅ Login
   Future<Map<String, dynamic>> login(String userId, String password) async {
@@ -117,6 +117,33 @@ class DatabaseHelper {
       return jsonDecode(response.body);
     } catch (e) {
       return {"status": "error", "message": "Failed to connect: $e"};
+    }
+  }
+
+  // ✅ Get Assigned Pilgrims for a Motawif
+  Future<List<Map<String, dynamic>>> getAssignedPilgrims(
+      String motawifId) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$serverUrl/get_assigned_pilgrims.php"),
+        body: {'motawif_id': motawifId},
+      );
+
+      if (response.statusCode == 200) {
+        final jsonResponse = json.decode(response.body);
+        if (jsonResponse['success']) {
+          return List<Map<String, dynamic>>.from(jsonResponse['data']);
+        } else {
+          print("Server Error: ${jsonResponse['message']}");
+          return [];
+        }
+      } else {
+        print("HTTP Error: ${response.statusCode}");
+        return [];
+      }
+    } catch (e) {
+      print("❌ ERROR fetching assigned pilgrims: $e");
+      return [];
     }
   }
 

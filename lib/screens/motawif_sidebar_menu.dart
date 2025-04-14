@@ -11,11 +11,55 @@ import 'health_monitoring_page.dart';
 import 'settings_page.dart';
 import 'notifications_page.dart';
 import 'help_page.dart';
-import 'task_schedule_page.dart'; // ✅ Import the Task & Schedule Page
+import 'task_schedule_page.dart';
 import 'tracking_page.dart';
 
-class MotawifSidebarMenu extends StatelessWidget {
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+
+class MotawifSidebarMenu extends StatefulWidget {
+  @override
+  _MotawifSidebarMenuState createState() => _MotawifSidebarMenuState();
+}
+
+class _MotawifSidebarMenuState extends State<MotawifSidebarMenu> {
   final Color primaryColor = const Color(0xFF0D4A45);
+  List<Map<String, dynamic>> assignedPilgrims = [];
+  String? motawifId;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchAssignedPilgrims();
+  }
+
+  Future<void> fetchAssignedPilgrims() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    motawifId = prefs.getString('user_id');
+
+    if (motawifId == null) return;
+
+    final url =
+        Uri.parse('http://172.20.10.3/e_motawif_new/get_assigned_pilgrims.php');
+    final response = await http.post(url, body: {
+      'motawif_id': motawifId!,
+    });
+
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body);
+      if (jsonData['success']) {
+        setState(() {
+          assignedPilgrims = List<Map<String, dynamic>>.from(jsonData['data']);
+        });
+        print('✅ Assigned Pilgrims: $assignedPilgrims');
+      } else {
+        print('❌ Failed to fetch: ${jsonData['message']}');
+      }
+    } else {
+      print('❌ Server error: ${response.statusCode}');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +74,6 @@ class MotawifSidebarMenu extends StatelessWidget {
         centerTitle: true,
         elevation: 0,
         actions: [
-          // ✅ Settings Icon
           IconButton(
             icon: const Icon(Icons.settings, color: Colors.white),
             onPressed: () {
@@ -54,8 +97,7 @@ class MotawifSidebarMenu extends StatelessWidget {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: ListView(
           children: [
             const Text(
               "Welcome, Motawif!",
@@ -65,7 +107,16 @@ class MotawifSidebarMenu extends StatelessWidget {
                 color: Color(0xFF0D4A45),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
+            if (assignedPilgrims.isNotEmpty) ...[
+              const Text(
+                "Assigned Pilgrims:",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 5),
+              ...assignedPilgrims.map((p) => Text("- ${p['name']}")).toList(),
+              const SizedBox(height: 20),
+            ],
             _buildMenuItem(
               context,
               icon: Icons.map,
