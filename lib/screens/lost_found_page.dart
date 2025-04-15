@@ -13,100 +13,105 @@ class _LostFoundPageState extends State<LostFoundPage> {
   final TextEditingController _dateTimeController = TextEditingController();
 
   bool isReportingFound = true;
-  List<dynamic> _matchingItems = [];
+  List<Map<String, dynamic>> _matchingItems = [];
   bool _noMatchesFound = false;
 
   void _submitReport() async {
-    print("Submitting item...");
-
     String itemName = _itemNameController.text.trim();
     String description = _descriptionController.text.trim();
     String location = _locationController.text.trim();
     String date = _dateTimeController.text.trim();
-    String status = isReportingFound ? 'found' : 'lost';
 
     if (itemName.isEmpty || location.isEmpty || date.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Please fill all required fields!"),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showError("Please fill all required fields!");
       return;
     }
 
     try {
-      String response = await DatabaseHelper().reportItem(
-        "user_id_here", // Replace with the actual user ID
+      final result = await DatabaseHelper().reportItem(
         itemName,
         description,
         location,
-        status,
+        date,
       );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Your item has been submitted!"),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      _itemNameController.clear();
-      _descriptionController.clear();
-      _locationController.clear();
-      _dateTimeController.clear();
+      _showSuccess(result);
+      _clearForm();
     } catch (e) {
-      print("Database insert error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Failed to submit. Try again."),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showError("Failed to submit. Try again.");
     }
   }
 
   void _searchLostItem() async {
-    print("Searching for item...");
+    String itemName = _itemNameController.text.trim();
+    String description = _descriptionController.text.trim();
+    String location = _locationController.text.trim();
+    String date = _dateTimeController.text.trim();
 
-    String searchItem = _itemNameController.text.trim();
-    if (searchItem.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Enter an item name to search."),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (itemName.isEmpty || location.isEmpty || date.isEmpty) {
+      _showError("Please fill all required fields!");
       return;
     }
 
     try {
-      List<dynamic> matchedItems =
-          await DatabaseHelper().searchLostItem(searchItem);
-
+      final matchedItems = await DatabaseHelper().searchLostItem(
+        itemName,
+        description,
+        location,
+        date,
+      );
       setState(() {
         _matchingItems = matchedItems;
         _noMatchesFound = matchedItems.isEmpty;
       });
-
-      print("Search results: $_matchingItems");
     } catch (e) {
-      print("Search error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Failed to search. Try again."),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showError("Search failed. Try again.");
     }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
+    );
+  }
+
+  void _clearForm() {
+    _itemNameController.clear();
+    _descriptionController.clear();
+    _locationController.clear();
+    _dateTimeController.clear();
+  }
+
+  InputDecoration _inputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      border: const OutlineInputBorder(),
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.teal.shade700, width: 2),
+      ),
+    );
+  }
+
+  Widget _buildInputField(String label, TextEditingController controller) {
+    return TextField(
+      controller: controller,
+      decoration: _inputDecoration(label),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Report Lost & Found Items',
-            style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Report Lost & Found Items',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: const Color(0xFF0D4A45),
       ),
       body: Padding(
@@ -114,69 +119,77 @@ class _LostFoundPageState extends State<LostFoundPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Text(
+              "Select an option:",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 4),
             Row(
               children: [
-                Expanded(
-                  child: RadioListTile(
-                    title: const Text("Report Found Item"),
-                    value: true,
-                    groupValue: isReportingFound,
-                    onChanged: (value) {
-                      setState(() {
-                        isReportingFound = value as bool;
-                        _matchingItems.clear();
-                        _noMatchesFound = false;
-                      });
-                    },
-                  ),
+                Row(
+                  children: [
+                    Radio<bool>(
+                      value: true,
+                      groupValue: isReportingFound,
+                      onChanged: (value) {
+                        setState(() {
+                          isReportingFound = value!;
+                          _matchingItems.clear();
+                          _noMatchesFound = false;
+                        });
+                      },
+                      activeColor: Colors.teal,
+                    ),
+                    const Text(
+                      "Report Found Item",
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: RadioListTile(
-                    title: const Text("Report Lost Item"),
-                    value: false,
-                    groupValue: isReportingFound,
-                    onChanged: (value) {
-                      setState(() {
-                        isReportingFound = value as bool;
-                        _matchingItems.clear();
-                        _noMatchesFound = false;
-                      });
-                    },
-                  ),
+                const SizedBox(width: 20),
+                Row(
+                  children: [
+                    Radio<bool>(
+                      value: false,
+                      groupValue: isReportingFound,
+                      onChanged: (value) {
+                        setState(() {
+                          isReportingFound = value!;
+                          _matchingItems.clear();
+                          _noMatchesFound = false;
+                        });
+                      },
+                      activeColor: Colors.teal,
+                    ),
+                    const Text(
+                      "Report Lost Item",
+                      style: TextStyle(fontSize: 14),
+                    ),
+                  ],
                 ),
               ],
             ),
-            TextField(
-              controller: _itemNameController,
-              decoration: const InputDecoration(labelText: "Item Name"),
-            ),
             const SizedBox(height: 10),
-            TextField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(labelText: "Description"),
-            ),
+            _buildInputField("Item Name", _itemNameController),
             const SizedBox(height: 10),
-            TextField(
-              controller: _locationController,
-              decoration: const InputDecoration(labelText: "Location"),
-            ),
+            _buildInputField("Description", _descriptionController),
+            const SizedBox(height: 10),
+            _buildInputField("Lost Location", _locationController),
             const SizedBox(height: 10),
             TextField(
               controller: _dateTimeController,
-              decoration: const InputDecoration(labelText: "Date"),
               readOnly: true,
+              decoration: _inputDecoration("Date"),
               onTap: () async {
-                DateTime? pickedDate = await showDatePicker(
+                DateTime? picked = await showDatePicker(
                   context: context,
                   initialDate: DateTime.now(),
-                  firstDate: DateTime(2000),
+                  firstDate: DateTime(2020),
                   lastDate: DateTime.now(),
                 );
-                if (pickedDate != null) {
-                  setState(() {
-                    _dateTimeController.text =
-                        pickedDate.toString().split(' ')[0];
-                  });
+                if (picked != null) {
+                  _dateTimeController.text =
+                      "${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}";
                 }
               },
             ),
@@ -185,18 +198,16 @@ class _LostFoundPageState extends State<LostFoundPage> {
               child: ElevatedButton(
                 onPressed: isReportingFound ? _submitReport : _searchLostItem,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
+                  backgroundColor: const Color(0xFF0D4A45),
                   padding:
                       const EdgeInsets.symmetric(vertical: 15, horizontal: 40),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 child: Text(
-                  isReportingFound ? 'Submit' : 'Search',
-                  style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white),
+                  isReportingFound ? "Submit" : "Search",
+                  style: const TextStyle(fontSize: 16, color: Colors.white),
                 ),
               ),
             ),
@@ -207,36 +218,25 @@ class _LostFoundPageState extends State<LostFoundPage> {
                     ? ListView.builder(
                         itemCount: _matchingItems.length,
                         itemBuilder: (context, index) {
+                          final item = _matchingItems[index];
                           return Card(
+                            margin: const EdgeInsets.symmetric(vertical: 8),
                             elevation: 3,
-                            margin: const EdgeInsets.symmetric(
-                                vertical: 8, horizontal: 5),
                             child: ListTile(
-                              leading: const Icon(Icons.check_circle,
+                              leading: const Icon(Icons.inventory_2,
                                   color: Colors.green),
-                              title: Text(
-                                "Item: ${_matchingItems[index]['itemName']}",
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
-                              ),
+                              title: Text("Item: ${item['itemName']}"),
                               subtitle: Text(
-                                "Description: ${_matchingItems[index]['description']}\n"
-                                "Location: ${_matchingItems[index]['location']}\n"
-                                "Date: ${_matchingItems[index]['date']}",
-                              ),
+                                  "Description: ${item['description']}\nLocation: ${item['location']}\nDate: ${item['date']}"),
                             ),
                           );
                         },
                       )
                     : _noMatchesFound
-                        ? const Center(
-                            child: Text(
-                              "No matching item found.",
-                              style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.red),
-                            ),
+                        ? const Text(
+                            "No matching item found.",
+                            style: TextStyle(
+                                color: Colors.red, fontWeight: FontWeight.bold),
                           )
                         : const SizedBox(),
               ),

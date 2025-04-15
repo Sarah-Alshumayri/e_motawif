@@ -126,7 +126,7 @@ class StartupSessionPageState extends State<StartupSessionPage> {
     return Text(
       widget.userRole == "Pilgrim"
           ? "Welcome! Your Motawif is ${widget.motawifName}."
-          : "Welcome! Ready to assist the pilgrims today?",
+          : "Stay connected and let E-Motawif guide you every step of the way.",
       style: TextStyle(
           fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
     );

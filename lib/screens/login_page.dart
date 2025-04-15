@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'signup_page.dart';
 import 'forgot_password_page.dart';
 import 'startup_session_page.dart';
-import 'motawif_sidebar_menu.dart';
 import '../database_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,12 +21,10 @@ class _LoginPageState extends State<LoginPage> {
 
     if (result['status'] == 'success') {
       String role = result['role'].toLowerCase();
-      String userId = result['user_id'].toString(); // ✅ <-- THIS IS NEEDED
+      String userId = result['user_id'].toString();
 
-      // ✅ Save userId to SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_id', userId);
-      print("✅ user_id saved to SharedPreferences: $userId");
 
       Navigator.pushReplacement(
         context,
@@ -52,20 +49,10 @@ class _LoginPageState extends State<LoginPage> {
         child: Center(
           child: SingleChildScrollView(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 40),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 10),
-                      child: Image.asset(
-                        'assets/images/e_motawif_logo.png',
-                        height: 130,
-                      ),
-                    ),
-                  ],
+                Image.asset(
+                  'assets/images/e_motawif_logo.png',
+                  height: 200,
                 ),
                 const SizedBox(height: 20),
                 const Text(
@@ -77,104 +64,90 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                TextField(
-                  controller: _idController,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    hintText: "ID, Passport, Iqama, or Visa",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
+                _buildInput(_idController, "ID, Passport, Iqama, or Visa"),
                 const SizedBox(height: 20),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: Colors.white,
-                    hintText: "Password",
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                        color: Colors.black54,
-                      ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10.0),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
+                _buildPassword(),
                 const SizedBox(height: 30),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _attemptLogin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.yellow,
-                      padding: const EdgeInsets.symmetric(vertical: 15.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10.0),
-                      ),
-                    ),
-                    child: const Text(
-                      "Login",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
-                ),
+                _buildButton("Login", _attemptLogin),
                 const SizedBox(height: 20),
-                // Forgot Password Link
-                Center(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => ForgotPasswordPage()),
-                      );
-                    },
-                    child: const Text(
-                      "Forgot Password?",
-                      style: TextStyle(
-                        color: Colors.white,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // Sign Up Link
-                Center(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => SignUpPage()),
-                      );
-                    },
-                    child: const Text(
-                      "Don't have an account? Sign Up",
-                      style: TextStyle(
-                        color: Colors.white,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ),
+                _buildLink("Forgot Password?", ForgotPasswordPage()),
+                _buildLink("Don't have an account? Sign Up", SignUpPage()),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInput(TextEditingController controller, String hint) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        hintText: hint,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPassword() {
+    return TextField(
+      controller: _passwordController,
+      obscureText: _obscurePassword,
+      decoration: InputDecoration(
+        filled: true,
+        fillColor: Colors.white,
+        hintText: "Password",
+        suffixIcon: IconButton(
+          icon: Icon(
+            _obscurePassword ? Icons.visibility_off : Icons.visibility,
+            color: Colors.black54,
+          ),
+          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildButton(String text, VoidCallback onTap) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.yellow,
+          padding: const EdgeInsets.symmetric(vertical: 15.0),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+        ),
+        child: Text(text,
+            style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black)),
+      ),
+    );
+  }
+
+  Widget _buildLink(String text, Widget page) {
+    return Center(
+      child: GestureDetector(
+        onTap: () =>
+            Navigator.push(context, MaterialPageRoute(builder: (_) => page)),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            decoration: TextDecoration.underline,
           ),
         ),
       ),

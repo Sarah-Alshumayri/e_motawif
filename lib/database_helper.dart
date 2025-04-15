@@ -1,10 +1,66 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DatabaseHelper {
-  static const String serverUrl = "http://172.20.10.3/e_motawif_new";
+  static const String serverUrl = "http://192.168.56.1/e_motawif_new";
 
-  // ✅ Reusable POST method for simple APIs
+  Future<String> reportItem(
+    String itemName,
+    String description,
+    String location,
+    String date,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString("user_id") ?? ""; // ✅ Retrieve saved user ID
+
+    final response = await http.post(
+      Uri.parse("$serverUrl/lost_found_ai.php"),
+      body: {
+        "action": "report",
+        "user_id": userId,
+        "itemName": itemName,
+        "description": description,
+        "location": location,
+        "date": date,
+      },
+    );
+
+    final jsonResponse = jsonDecode(response.body);
+    return jsonResponse["message"];
+  }
+
+  // ✅ AI-Based Lost Item Search
+  Future<List<Map<String, dynamic>>> searchLostItem(
+    String itemName,
+    String description,
+    String location,
+    String date,
+  ) async {
+    final response = await http.post(
+      Uri.parse("$serverUrl/lost_found_ai.php"),
+      body: {
+        "action": "search",
+        "itemName": itemName,
+        "description": description,
+        "location": location,
+        "date": date,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final jsonResponse = jsonDecode(response.body);
+      if (jsonResponse["status"] == "success") {
+        return List<Map<String, dynamic>>.from(jsonResponse["results"]);
+      } else {
+        throw Exception(jsonResponse["message"]);
+      }
+    } else {
+      throw Exception("Server error: ${response.statusCode}");
+    }
+  }
+
+  // ✅ Generic POST Method
   static Future<dynamic> postData({
     required String url,
     required Map<String, dynamic> body,
@@ -27,7 +83,7 @@ class DatabaseHelper {
     }
   }
 
-  // ✅ Login
+  // 🔐 Login
   Future<Map<String, dynamic>> login(String userId, String password) async {
     try {
       var response = await http.post(
@@ -37,14 +93,9 @@ class DatabaseHelper {
 
       if (response.statusCode == 200) {
         var jsonResponse = jsonDecode(response.body);
-        if (jsonResponse is Map<String, dynamic>) {
-          return jsonResponse;
-        } else {
-          return {
-            "status": "error",
-            "message": "Invalid server response format"
-          };
-        }
+        return jsonResponse is Map<String, dynamic>
+            ? jsonResponse
+            : {"status": "error", "message": "Invalid server response format"};
       } else {
         return {
           "status": "error",
@@ -56,7 +107,7 @@ class DatabaseHelper {
     }
   }
 
-  // ✅ Get User Profile
+  // 🧑 Get User Profile
   Future<Map<String, dynamic>> getUserProfile(String userId) async {
     try {
       var response = await http.post(
@@ -65,8 +116,7 @@ class DatabaseHelper {
       );
 
       if (response.statusCode == 200) {
-        var jsonResponse = jsonDecode(response.body);
-        return jsonResponse;
+        return jsonDecode(response.body);
       } else {
         return {
           "status": "error",
@@ -78,7 +128,7 @@ class DatabaseHelper {
     }
   }
 
-  // ✅ Save Updated User Profile
+  // 🧑‍💻 Save Profile
   Future<Map<String, dynamic>> saveUserProfile(
       Map<String, dynamic> data) async {
     try {
@@ -92,7 +142,7 @@ class DatabaseHelper {
     }
   }
 
-  // ✅ Get All Tasks by motawif_id
+  // 📋 Tasks & Movement Handling (unchanged)
   Future<List<Map<String, dynamic>>> getTasks(String motawifId) async {
     try {
       final response = await http.get(
@@ -104,18 +154,14 @@ class DatabaseHelper {
           return List<Map<String, dynamic>>.from(json['tasks']);
         } else {
           print("Server error: ${json['message']}");
-          return [];
         }
-      } else {
-        return [];
       }
     } catch (e) {
       print("Error fetching tasks: $e");
-      return [];
     }
+    return [];
   }
 
-  // ✅ Save New or Update Task
   Future<Map<String, dynamic>> saveTask(Map<String, dynamic> taskData) async {
     try {
       final response = await http.post(
@@ -129,7 +175,6 @@ class DatabaseHelper {
     }
   }
 
-  // ✅ Delete Task by ID
   Future<Map<String, dynamic>> deleteTask(String taskId) async {
     try {
       final response = await http.post(
@@ -143,7 +188,6 @@ class DatabaseHelper {
     }
   }
 
-  // ✅ Get Assigned Pilgrims for a Motawif
   Future<List<Map<String, dynamic>>> getAssignedPilgrims(
       String motawifId) async {
     try {
@@ -158,26 +202,22 @@ class DatabaseHelper {
           return List<Map<String, dynamic>>.from(jsonResponse['data']);
         } else {
           print("Server Error: ${jsonResponse['message']}");
-          return [];
         }
       } else {
         print("HTTP Error: ${response.statusCode}");
-        return [];
       }
     } catch (e) {
       print("❌ ERROR fetching assigned pilgrims: $e");
-      return [];
     }
+    return [];
   }
 
-  // ✅ Save Movement History to DB
   static Future<void> saveMovement({
     required String userId,
     required double latitude,
     required double longitude,
   }) async {
-    print("📡 API CALL: userId=$userId, lat=$latitude, lng=$longitude");
-
+    print("📡 Saving movement: user=$userId lat=$latitude lng=$longitude");
     try {
       final response = await http.post(
         Uri.parse("$serverUrl/save_movement.php"),
@@ -187,17 +227,9 @@ class DatabaseHelper {
           'longitude': longitude.toString(),
         },
       );
-
-      print("📬 Status Code: ${response.statusCode}");
-      print("📬 Response Body: ${response.body}");
+      print("📬 Response: ${response.statusCode} ${response.body}");
     } catch (e) {
       print("❌ ERROR: $e");
     }
   }
-
-  // Placeholder methods
-  searchLostItem(String searchItem) {}
-
-  reportItem(String userId, String itemName, String description,
-      String location, String status) {}
 }
