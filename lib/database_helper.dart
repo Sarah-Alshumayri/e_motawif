@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DatabaseHelper {
-  static const String serverUrl = "http://192.168.56.1/e_motawif_new";
+  static const String serverUrl = "http://10.0.2.2/e_motawif_new";
 
   Future<String> reportItem(
     String itemName,
@@ -188,28 +188,23 @@ class DatabaseHelper {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getAssignedPilgrims(
-      String motawifId) async {
-    try {
-      final response = await http.post(
-        Uri.parse("$serverUrl/get_assigned_pilgrims.php"),
-        body: {'motawif_id': motawifId},
-      );
+  // ✅ Get Assigned Pilgrims for a Motawif
+  Future<Map<String, dynamic>> getAssignedPilgrims(String motawifId) async {
+    final url = Uri.parse(
+        "http://10.0.2.2/e_motawif_new/get_pilgrims_for_tracking.php");
 
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(response.body);
-        if (jsonResponse['success']) {
-          return List<Map<String, dynamic>>.from(jsonResponse['data']);
-        } else {
-          print("Server Error: ${jsonResponse['message']}");
-        }
-      } else {
-        print("HTTP Error: ${response.statusCode}");
-      }
-    } catch (e) {
-      print("❌ ERROR fetching assigned pilgrims: $e");
+    final response = await http.post(
+      url,
+      body: {
+        'motawif_id': motawifId,
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load assigned pilgrims');
     }
-    return [];
   }
 
   static Future<void> saveMovement({

@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'signup_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'login_page.dart';
+import 'startup_session_page.dart';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -16,7 +18,7 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Initialize animation controller
+    // Start logo animation
     _controller = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
@@ -27,21 +29,32 @@ class _SplashScreenState extends State<SplashScreen>
       curve: Curves.easeInOut,
     );
 
-    // Start the animation
     _controller.forward();
 
-    // Timer to navigate to SignUpPage
-    Timer(
-      const Duration(seconds: 3),
-      () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => SignUpPage(),
-          ),
-        );
-      },
-    );
+    // After 3 sec, check login and go to Login or StartupSessionPage
+    Timer(const Duration(seconds: 3), () {
+      _checkLoginAndRedirect();
+    });
+  }
+
+  Future<void> _checkLoginAndRedirect() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+    String? userRole = prefs.getString('userRole');
+
+    if (isLoggedIn && userRole != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => StartupSessionPage(userRole: userRole.toLowerCase()),
+        ),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => LoginPage()),
+      );
+    }
   }
 
   @override
@@ -53,21 +66,19 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D4A45), // Background color
+      backgroundColor: const Color(0xFF0D4A45),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Animated Fade-In Logo
             FadeTransition(
               opacity: _fadeAnimation,
               child: Image.asset(
-                'assets/images/e_motawif_logo.png', // Ensure the asset exists
-                height: 250, // Larger size for better visibility
+                'assets/images/e_motawif_logo.png',
+                height: 250,
               ),
             ),
             const SizedBox(height: 10),
-            // Tagline under the logo in two lines
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 40.0),
               child: Text(

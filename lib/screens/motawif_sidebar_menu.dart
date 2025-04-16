@@ -12,7 +12,7 @@ import 'settings_page.dart';
 import 'notifications_page.dart';
 import 'help_page.dart';
 import 'task_schedule_page.dart';
-import 'tracking_page.dart';
+//import 'tracking_page.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';

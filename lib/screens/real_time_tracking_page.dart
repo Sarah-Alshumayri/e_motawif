@@ -37,19 +37,26 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
     super.initState();
     _mapController = MapController();
     _loadUserId();
-
-    _refreshTimer = Timer.periodic(Duration(seconds: 5), (timer) {
-      if (widget.userRole == 'Motawif') {
-        fetchAssignedPilgrims();
-      }
-    });
   }
 
   Future<void> _loadUserId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? loadedId = prefs.getString('user_id');
+
+    print("👤 Loaded user ID: $loadedId");
+    print("🧾 Role on RealTimeTrackingPage: ${widget.userRole}");
+
     setState(() {
-      userId = prefs.getString('user_id');
+      userId = loadedId;
     });
+
+    if (widget.userRole.toLowerCase() == 'motawif' && userId != null) {
+      fetchAssignedPilgrims();
+
+      _refreshTimer = Timer.periodic(Duration(seconds: 5), (timer) {
+        fetchAssignedPilgrims();
+      });
+    }
   }
 
   void toggleTracking() {
@@ -86,6 +93,8 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
         });
 
         if (userId != null) {
+          print(
+              "📡 Saving movement: user=$userId lat=${currentLocation.latitude} lng=${currentLocation.longitude}");
           DatabaseHelper.saveMovement(
             userId: userId!,
             latitude: currentLocation.latitude,
@@ -115,15 +124,12 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("\u26a0\ufe0f Out of Bounds"),
-          content: const Text(
-              "You have exited the safe zone. Please return immediately."),
+          title: const Text("⚠️ Out of Bounds"),
+          content: const Text("You have exited the safe zone. Please return."),
           actions: [
             TextButton(
               child: const Text("OK"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ],
         );
@@ -147,31 +153,47 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
   }
 
   Future<void> fetchAssignedPilgrims() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? motawifId = prefs.getString('user_id');
+    if (userId == null) {
+      print("❌ No user ID found yet.");
+      return;
+    }
 
-    print("📡 Getting assigned pilgrims for: $motawifId");
+    print("📢 fetchAssignedPilgrims() called — userId = $userId");
 
-    final List<Map<String, dynamic>> result =
-        await DatabaseHelper().getAssignedPilgrims(motawifId ?? "");
+    try {
+      final response = await DatabaseHelper.postData(
+        url: "get_pilgrims_for_tracking.php",
+        body: {"motawif_id": userId!},
+      );
 
-    if (result.isNotEmpty) {
-      print("✅ Data: $result");
+      print("📥 API Response: $response");
 
-      setState(() {
-        assignedPilgrims = result.map((p) {
-          return {
-            "id": p['user_id'],
-            "name": p['name'],
-            "lastLat": double.tryParse(p['latitude'] ?? '0') ?? 0.0,
-            "lastLng": double.tryParse(p['longitude'] ?? '0') ?? 0.0,
-            "lastSeen": p['lastSeen'] ?? "Unknown",
-            "status": "Unknown"
-          };
-        }).toList();
-      });
-    } else {
-      print("⚠️ No assigned pilgrims found.");
+      if (response != null &&
+          response['success'] == true &&
+          response['data'] is List) {
+        List<dynamic> data = response['data'];
+
+        setState(() {
+          assignedPilgrims = data.map<Map<String, dynamic>>((p) {
+            return {
+              "id": p['pilgrim_id'].toString(),
+              "name": p['name'] ?? "Unknown",
+              "lastLat":
+                  double.tryParse(p['latitude']?.toString() ?? '0') ?? 0.0,
+              "lastLng":
+                  double.tryParse(p['longitude']?.toString() ?? '0') ?? 0.0,
+              "lastSeen": p['lastSeen'] ?? "Unknown",
+              "status": "Unknown"
+            };
+          }).toList();
+        });
+
+        print("✅ Assigned pilgrims loaded: ${assignedPilgrims.length}");
+      } else {
+        print("⚠️ API returned no data or wrong format.");
+      }
+    } catch (e) {
+      print("❌ Error fetching assigned pilgrims: $e");
     }
   }
 
@@ -239,14 +261,12 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
             ElevatedButton(
               onPressed: checkOutOfBounds,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-              child: Text(
-                "Simulate Out of Bounds",
-                style: TextStyle(color: Colors.white),
-              ),
+              child: Text("Simulate Out of Bounds",
+                  style: TextStyle(color: Colors.white)),
             ),
             SizedBox(height: 20),
             Expanded(
-              child: widget.userRole == 'Pilgrim'
+              child: widget.userRole.toLowerCase() == 'pilgrim'
                   ? _buildPilgrimView()
                   : _buildMotawifView(),
             ),
@@ -278,11 +298,8 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
                     point: currentLocation,
                     width: 80,
                     height: 80,
-                    builder: (ctx) => const Icon(
-                      Icons.location_on,
-                      color: Colors.red,
-                      size: 40,
-                    ),
+                    builder: (ctx) => const Icon(Icons.location_on,
+                        color: Colors.red, size: 40),
                   ),
                 ],
               ),
@@ -293,17 +310,13 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Movement History',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            const Text('Movement History',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             TextButton.icon(
               onPressed: _clearMovementHistory,
               icon: const Icon(Icons.delete, color: Colors.red),
-              label: const Text(
-                "Clear History",
-                style: TextStyle(color: Colors.red),
-              ),
+              label: const Text("Clear History",
+                  style: TextStyle(color: Colors.red)),
             ),
           ],
         ),
@@ -330,88 +343,81 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
   }
 
   Widget _buildMotawifView() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Assigned Pilgrims',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        SizedBox(height: 10),
-        if (selectedPilgrimLocation != null) ...[
-          Text(
-            'Tracking: ${assignedPilgrims.firstWhere((p) => p["id"].toString() == selectedPilgrimId)["name"]}',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          Expanded(
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                center: selectedPilgrimLocation!,
-                zoom: 15,
+    if (assignedPilgrims.isEmpty) {
+      return Center(child: Text("⛔ No pilgrims assigned to you."));
+    }
+
+    return selectedPilgrimLocation != null
+        ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Tracking: ${assignedPilgrims.firstWhere((p) => p["id"] == selectedPilgrimId)["name"]}',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
-              children: [
-                TileLayer(
-                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  userAgentPackageName: 'com.example.e_motawif',
-                ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: selectedPilgrimLocation!,
-                      width: 80,
-                      height: 80,
-                      builder: (ctx) => Icon(
-                        Icons.location_on,
-                        color: Colors.teal,
-                        size: 40,
-                      ),
+              Expanded(
+                child: FlutterMap(
+                  mapController: _mapController,
+                  options:
+                      MapOptions(center: selectedPilgrimLocation, zoom: 15),
+                  children: [
+                    TileLayer(
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.example.e_motawif',
+                    ),
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: selectedPilgrimLocation!,
+                          width: 80,
+                          height: 80,
+                          builder: (ctx) => const Icon(Icons.location_on,
+                              color: Colors.red, size: 40),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                selectedPilgrimId = null;
-                selectedPilgrimLocation = null;
-              });
-            },
-            child: Text("← Back to list"),
+              ),
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    selectedPilgrimId = null;
+                    selectedPilgrimLocation = null;
+                  });
+                },
+                child: Text("← Back to list"),
+              )
+            ],
           )
-        ] else
-          Expanded(
-            child: assignedPilgrims.isEmpty
-                ? Center(child: Text("No pilgrims found."))
-                : ListView.builder(
-                    itemCount: assignedPilgrims.length,
-                    itemBuilder: (context, index) {
-                      final pilgrim = assignedPilgrims[index];
-                      return ListTile(
-                        leading:
-                            Icon(Icons.person_pin_circle, color: Colors.teal),
-                        title: Text(pilgrim["name"]),
-                        subtitle: Text("Last seen: ${pilgrim["lastSeen"]}"),
-                        trailing: ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              selectedPilgrimId = pilgrim["id"].toString();
-                              selectedPilgrimLocation = LatLng(
-                                pilgrim["lastLat"],
-                                pilgrim["lastLng"],
-                              );
-                            });
-                          },
-                          style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.teal),
-                          child: Text("Track",
-                              style: TextStyle(color: Colors.white)),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-      ],
-    );
+        : ListView.builder(
+            itemCount: assignedPilgrims.length,
+            itemBuilder: (context, index) {
+              final pilgrim = assignedPilgrims[index];
+              return ListTile(
+                leading: Icon(Icons.person_pin_circle, color: Colors.teal),
+                title: Text(pilgrim["name"]),
+                subtitle: Text("Last seen: ${pilgrim["lastSeen"]}"),
+                trailing: ElevatedButton(
+                  onPressed: () {
+                    LatLng newLocation = LatLng(
+                      pilgrim["lastLat"],
+                      pilgrim["lastLng"],
+                    );
+
+                    setState(() {
+                      selectedPilgrimId = pilgrim["id"];
+                      selectedPilgrimLocation = newLocation;
+                    });
+
+                    _mapController.move(newLocation, 15);
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+                  child: Text("Track", style: TextStyle(color: Colors.white)),
+                ),
+              );
+            },
+          );
   }
 }

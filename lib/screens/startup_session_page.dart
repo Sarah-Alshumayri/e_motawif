@@ -8,16 +8,14 @@ import 'chat_page.dart';
 import 'login_page.dart';
 import 'services_page.dart';
 import 'motawif_sidebar_menu.dart';
-import 'pilgrim_dashboard_page.dart'; // 👈 NEW import
+import 'pilgrim_dashboard_page.dart';
 
 class StartupSessionPage extends StatefulWidget {
   final String userRole;
-  final String motawifName;
 
   const StartupSessionPage({
     Key? key,
     required this.userRole,
-    this.motawifName = "Motawif Ahmed",
   }) : super(key: key);
 
   @override
@@ -28,12 +26,15 @@ class StartupSessionPageState extends State<StartupSessionPage> {
   final Color primaryColor = const Color(0xFF0D4A45);
   List<Map<String, dynamic>> assignedPilgrims = [];
   String? selectedPilgrimId;
+  String motawifName = "";
 
   @override
   void initState() {
     super.initState();
-    if (widget.userRole == "motawif") {
+    if (widget.userRole.toLowerCase() == "motawif") {
       fetchAssignedPilgrims();
+    } else if (widget.userRole.toLowerCase() == "pilgrim") {
+      fetchMotawifNameForPilgrim();
     }
   }
 
@@ -60,6 +61,28 @@ class StartupSessionPageState extends State<StartupSessionPage> {
       print('✅ Assigned Pilgrims Loaded: $assignedPilgrims');
     } else {
       print('❌ Failed to load pilgrims: ${response.statusCode}');
+    }
+  }
+
+  Future<void> fetchMotawifNameForPilgrim() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? pilgrimId = prefs.getString('user_id');
+    if (pilgrimId == null) return;
+
+    final response = await http.post(
+      Uri.parse('http://10.0.2.2/e_motawif_new/get_motawif_for_pilgrim.php'),
+      body: {'pilgrim_id': pilgrimId},
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success']) {
+        setState(() {
+          motawifName = data['motawif_name'];
+        });
+      }
+    } else {
+      print('❌ Failed to fetch motawif name');
     }
   }
 
@@ -96,16 +119,22 @@ class StartupSessionPageState extends State<StartupSessionPage> {
           children: [
             _buildWelcomeMessage(),
             const SizedBox(height: 20),
-            if (widget.userRole == "motawif") _buildPilgrimsList(),
-            if (widget.userRole == "motawif") _buildCreateSessionButton(),
-            if (widget.userRole == "pilgrim") _buildMotawifInfo(),
+            if (widget.userRole.toLowerCase() == "motawif")
+              _buildPilgrimsList(),
+            if (widget.userRole.toLowerCase() == "motawif")
+              _buildCreateSessionButton(),
+            if (widget.userRole.toLowerCase() == "pilgrim") _buildMotawifInfo(),
             const SizedBox(height: 20),
             Center(
               child: ElevatedButton(
                 onPressed: () => _navigateToNextPage(context),
-                child: const Text("Start My Journey",
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text(
+                  widget.userRole.toLowerCase() == "motawif"
+                      ? "Go to Dashboard"
+                      : "Start My Journey",
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
@@ -124,9 +153,9 @@ class StartupSessionPageState extends State<StartupSessionPage> {
 
   Widget _buildWelcomeMessage() {
     return Text(
-      widget.userRole == "Pilgrim"
-          ? "Welcome! Your Motawif is ${widget.motawifName}."
-          : "Stay connected and let E-Motawif guide you every step of the way.",
+      widget.userRole.toLowerCase() == "pilgrim"
+          ? "Welcome! Your Motawif is ${motawifName.isNotEmpty ? motawifName : "Loading..."}."
+          : "Welcome back, Motawif. Ready to guide your pilgrims?",
       style: TextStyle(
           fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
     );
@@ -218,7 +247,7 @@ class StartupSessionPageState extends State<StartupSessionPage> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => ChatPage(
-                        motawifId: "MOTAWIF_ID", // optional for now
+                        motawifId: "MOTAWIF_ID",
                         pilgrimId: selectedPilgrim['user_id'],
                         pilgrimName: selectedPilgrim['name'],
                       ),
@@ -250,8 +279,10 @@ class StartupSessionPageState extends State<StartupSessionPage> {
             const SizedBox(height: 10),
             ListTile(
               leading: const Icon(Icons.person_outline, color: Colors.blue),
-              title: Text(widget.motawifName,
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              title: Text(
+                motawifName.isNotEmpty ? motawifName : "Loading...",
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
           ],
         ),
