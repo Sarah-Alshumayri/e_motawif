@@ -22,9 +22,11 @@ class _LoginPageState extends State<LoginPage> {
     if (result['status'] == 'success') {
       String role = result['role'].toLowerCase();
       String userId = result['user_id'].toString();
+      String name = result['name'] ?? 'Unknown'; // ✅ get name safely
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_id', userId);
+      await prefs.setString('name', name); // ✅ save name for later use
 
       Navigator.pushReplacement(
         context,

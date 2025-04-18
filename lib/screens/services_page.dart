@@ -1,23 +1,26 @@
-import 'package:e_motawif_new/screens/pilgrim_profile_page.dart';
 import 'package:flutter/material.dart';
-import 'sos_emergency_user.dart'; // Import the Pilgrims' SOS Emergency Page
-import 'lost_found_page.dart'; // Import the Lost & Found Page
-import 'customer_support_page.dart'; // Import the Customer Support Page
-import 'startup_session_page.dart'; // Import the Startup Session Page
+import 'pilgrim_profile_page.dart';
+import 'sos_emergency_user.dart';
+import 'lost_found_page.dart';
+import 'customer_support_page.dart';
+import 'startup_session_page.dart';
 import 'ritual_guidance_page.dart';
 import 'residency_allocation.dart';
 import 'real_time_tracking_page.dart';
 import 'health_monitoring_page.dart';
 import 'settings_page.dart';
-import 'notifications_page.dart'; // Import the Notifications Page
-import 'help_page.dart'; // ✅ Import the Help Page
-import 'tracking_page.dart';
+import 'notifications_page.dart';
+import 'help_page.dart';
+import 'sos_emergency_user.dart';
+import 'notification_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class ServicesPage extends StatefulWidget {
-  final String
-      userRole; // ✅ Keep userRole to differentiate between Pilgrim & Motawif
-
-  const ServicesPage({Key? key, required this.userRole}) : super(key: key);
+  const ServicesPage({Key? key, required String userRole}) : super(key: key);
 
   @override
   _ServicesPageState createState() => _ServicesPageState();
@@ -53,8 +56,7 @@ class _ServicesPageState extends State<ServicesPage> {
     {
       "title": "Real-Time Tracking",
       "icon": Icons.location_on,
-      "page": RealTimeTrackingPage(
-          userRole: 'Pilgrim'), // Your temporary OpenStreetMap-based page
+      "page": RealTimeTrackingPage(userRole: 'Pilgrim'),
     },
     {
       "title": "Health Monitoring",
@@ -66,18 +68,58 @@ class _ServicesPageState extends State<ServicesPage> {
       "icon": Icons.notifications,
       "page": NotificationsPage(userRole: 'Pilgrim'),
     },
+    {
+      "title": "Emergency Service",
+      "icon": Icons.emergency,
+      "page": SOSEmergencyPage(), // ✅ Correct
+    },
   ];
 
   List<Map<String, dynamic>> filteredServices = [];
   List<String> pinnedServices = [];
+  Timer? _notificationTimer;
 
   @override
   void initState() {
     super.initState();
     filteredServices = List.from(services);
+    _startNotificationListener();
   }
 
-  // Function to filter services based on user input
+  @override
+  void dispose() {
+    _notificationTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startNotificationListener() {
+    _notificationTimer = Timer.periodic(Duration(seconds: 15), (timer) async {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? userId = prefs.getString('user_id');
+      if (userId == null) return;
+
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2/e_motawif_new/get_notifications.php'),
+        body: {'user_id': userId},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success']) {
+          final notifications =
+              List<Map<String, dynamic>>.from(data['notifications']);
+          if (notifications.isNotEmpty) {
+            final latest = notifications.first;
+            await NotificationService.showNotification(
+              title: latest['title'] ?? 'Notification',
+              body: latest['message'] ?? '',
+            );
+          }
+        }
+      }
+    });
+  }
+
   void filterServices(String query) {
     setState(() {
       filteredServices = services
@@ -87,7 +129,6 @@ class _ServicesPageState extends State<ServicesPage> {
     });
   }
 
-  // Function to pin/unpin services for quick access
   void togglePin(String title) {
     setState(() {
       if (pinnedServices.contains(title)) {
@@ -107,7 +148,6 @@ class _ServicesPageState extends State<ServicesPage> {
         centerTitle: true,
         elevation: 0,
         actions: [
-          // Notification Icon with Badge
           Stack(
             children: [
               IconButton(
@@ -117,7 +157,7 @@ class _ServicesPageState extends State<ServicesPage> {
                     context,
                     MaterialPageRoute(
                       builder: (context) =>
-                          NotificationsPage(userRole: widget.userRole),
+                          NotificationsPage(userRole: 'Pilgrim'),
                     ),
                   );
                 },
@@ -134,7 +174,6 @@ class _ServicesPageState extends State<ServicesPage> {
               ),
             ],
           ),
-          // Profile Icon
           IconButton(
             icon: Icon(Icons.account_circle, color: Colors.white),
             onPressed: () {
@@ -176,13 +215,10 @@ class _ServicesPageState extends State<ServicesPage> {
                 final bool isPinned = pinnedServices.contains(service['title']);
                 return GestureDetector(
                   onTap: () {
-                    if (service.containsKey('page')) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => service['page']),
-                      );
-                    }
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => service['page']),
+                    );
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
@@ -228,7 +264,16 @@ class _ServicesPageState extends State<ServicesPage> {
           ),
         ],
       ),
-
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => SOSEmergencyPage()),
+          );
+        },
+        backgroundColor: Colors.red,
+        child: const Icon(Icons.sos, color: Colors.white),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 0,
         onTap: (index) {
@@ -236,14 +281,13 @@ class _ServicesPageState extends State<ServicesPage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => SettingsPage(userRole: widget.userRole),
+                builder: (context) => SettingsPage(userRole: 'Pilgrim'),
               ),
             );
           } else if (index == 2) {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                  builder: (context) => HelpPage()), // ✅ Navigates to Help Page
+              MaterialPageRoute(builder: (context) => HelpPage()),
             );
           }
         },
@@ -251,24 +295,9 @@ class _ServicesPageState extends State<ServicesPage> {
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
           BottomNavigationBarItem(
               icon: Icon(Icons.settings), label: "Settings"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.help), label: "Help"), // ✅ Help Page Icon
+          BottomNavigationBarItem(icon: Icon(Icons.help), label: "Help"),
         ],
       ),
-
-      // ✅ Show SOS button only for Pilgrims
-      floatingActionButton: widget.userRole == "Pilgrim"
-          ? FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => SOSEmergencyPage()),
-                );
-              },
-              backgroundColor: Colors.red,
-              child: const Icon(Icons.sos, color: Colors.white),
-            )
-          : null, // ❌ No SOS button for Motawif
     );
   }
 }

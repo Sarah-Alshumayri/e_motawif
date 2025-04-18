@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'notification_service.dart';
 
 class ChatPage extends StatefulWidget {
   final String motawifId;
   final String pilgrimId;
   final String pilgrimName;
+  final String userRole; // ✅ added
 
   const ChatPage({
     Key? key,
     required this.motawifId,
     required this.pilgrimId,
     required this.pilgrimName,
+    required this.userRole, // ✅ added
   }) : super(key: key);
 
   @override
@@ -19,36 +25,122 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   final Color primaryColor = const Color(0xFF0D4A45);
   final TextEditingController _controller = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
-  List<Map<String, dynamic>> _messages = [
-    {
-      "text": "Salam, how are you today?",
-      "isMe": false,
-      "timestamp": DateTime.now().subtract(const Duration(minutes: 3)),
-      "sender": "Pilgrim"
-    },
-    {
-      "text": "Doing well, thank you! How are you feeling?",
-      "isMe": true,
-      "timestamp": DateTime.now().subtract(const Duration(minutes: 2)),
-      "sender": "Motawif"
-    },
-  ];
+  List<Map<String, dynamic>> _messages = [];
 
-  void _sendMessage() {
+  @override
+  void initState() {
+    super.initState();
+    _fetchMessages();
+  }
+
+  Future<void> _fetchMessages() async {
+    try {
+      final isMotawif = widget.userRole.toLowerCase() == 'motawif';
+      final senderId = isMotawif ? widget.motawifId : widget.pilgrimId;
+      final receiverId = isMotawif ? widget.pilgrimId : widget.motawifId;
+
+      final url = Uri.parse('http://10.0.2.2/e_motawif_new/get_messages.php');
+      final response = await http.post(url, body: {
+        'sender_id': senderId,
+        'receiver_id': receiverId,
+      });
+
+      print("🔁 Fetching messages: $senderId -> $receiverId");
+      print("📦 Response: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success']) {
+          setState(() {
+            _messages = List<Map<String, dynamic>>.from(
+              data['messages'].map((msg) => {
+                    'text': msg['message'],
+                    'isMe': msg['sender_id'] == senderId,
+                    'timestamp': DateTime.parse(msg['timestamp']),
+                    'sender': msg['sender_id'] == senderId
+                        ? (isMotawif ? 'Motawif' : 'You')
+                        : (isMotawif ? 'Pilgrim' : 'Motawif'),
+                  }),
+            );
+          });
+
+          // Scroll to the latest message
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollToBottom();
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching messages: $e");
+    }
+  }
+
+  void _sendMessage() async {
     if (_controller.text.trim().isEmpty) return;
+
+    final isMotawif = widget.userRole.toLowerCase() == 'motawif';
+    final senderId = isMotawif ? widget.motawifId : widget.pilgrimId;
+    final receiverId = isMotawif ? widget.pilgrimId : widget.motawifId;
+
+    final text = _controller.text.trim();
+    _controller.clear();
+
+    print("📤 Sending message: $text");
+    print("📦 Sender ID: $senderId, Receiver ID: $receiverId");
 
     setState(() {
       _messages.add({
-        "text": _controller.text.trim(),
+        "text": text,
         "isMe": true,
         "timestamp": DateTime.now(),
-        "sender": "Motawif"
+        "sender": "You"
       });
-      _controller.clear();
     });
 
-    // ⏳ Future integration: Send message to backend here
+    // 🔹 Send the message to backend
+    final messageUrl =
+        Uri.parse('http://10.0.2.2/e_motawif_new/send_message.php');
+    final response = await http.post(messageUrl, body: {
+      'sender_id': senderId,
+      'receiver_id': receiverId,
+      'message': text,
+    });
+
+    print("📨 Response from send_message.php: ${response.body}");
+
+    // 🔔 Send backend notification
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? senderName = prefs.getString('name');
+
+    final notificationUrl =
+        Uri.parse('http://10.0.2.2/e_motawif_new/send_notification.php');
+    final notificationResponse = await http.post(notificationUrl, body: {
+      'user_id': receiverId,
+      'title': 'New Message',
+      'message': 'You received a new message from $senderName.',
+      'sender_name': senderName ?? 'Someone'
+    });
+
+    print("🔔 Notification response: ${notificationResponse.body}");
+
+    // 🔔 Local notification
+    await NotificationService.showNotification(
+      title: 'New Message',
+      body: 'You sent a message to ${widget.pilgrimName}',
+    );
+
+    // Refresh messages
+    _fetchMessages();
+  }
+
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    });
   }
 
   String _formatTimestamp(DateTime time) {
@@ -70,6 +162,7 @@ class _ChatPageState extends State<ChatPage> {
         children: [
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: const EdgeInsets.all(12),
               itemCount: _messages.length,
               itemBuilder: (context, index) {

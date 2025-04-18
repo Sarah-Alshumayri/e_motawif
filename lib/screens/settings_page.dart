@@ -4,7 +4,7 @@ import 'login_page.dart';
 class SettingsPage extends StatefulWidget {
   final String userRole; // 'Pilgrim' or 'Motawif'
 
-  SettingsPage({required this.userRole, Key? key}) : super(key: key);
+  const SettingsPage({required this.userRole, Key? key}) : super(key: key);
 
   @override
   _SettingsPageState createState() => _SettingsPageState();
@@ -33,8 +33,62 @@ class _SettingsPageState extends State<SettingsPage> {
     });
   }
 
+  void _logout(BuildContext context) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+    );
+  }
+
+  Widget _buildCommonSettings() {
+    return Column(
+      children: [
+        ListTile(
+          leading: Icon(Icons.language, color: Colors.teal),
+          title: Text("Language"),
+          subtitle: Text(selectedLanguage),
+          trailing: DropdownButton<String>(
+            value: selectedLanguage,
+            items: ["English", "Arabic", "French"]
+                .map((lang) => DropdownMenuItem(
+                      child: Text(lang),
+                      value: lang,
+                    ))
+                .toList(),
+            onChanged: changeLanguage,
+          ),
+        ),
+        SwitchListTile(
+          title: Text("Dark Mode"),
+          value: darkModeEnabled,
+          onChanged: toggleDarkMode,
+          secondary: Icon(Icons.brightness_6, color: Colors.teal),
+        ),
+        ListTile(
+          leading: Icon(Icons.security, color: Colors.teal),
+          title: Text("Privacy & Security"),
+          subtitle: Text("Manage password & 2FA"),
+          trailing: Icon(Icons.arrow_forward_ios),
+          onTap: () => print("Privacy & Security Placeholder"),
+        ),
+        ListTile(
+          leading: Icon(Icons.delete, color: Colors.red),
+          title: Text("Delete Account"),
+          onTap: () => print("Delete Account Placeholder"),
+        ),
+        ListTile(
+          leading: Icon(Icons.help, color: Colors.teal),
+          title: Text("Help & Support"),
+          subtitle: Text("FAQs and Customer Support"),
+          trailing: Icon(Icons.arrow_forward_ios),
+          onTap: () => print("Help & Support Placeholder"),
+        ),
+      ],
+    );
+  }
+
   Widget _buildPilgrimSettings() {
-    return ListView(
+    return Column(
       children: [
         ListTile(
           leading: Icon(Icons.person, color: Colors.teal),
@@ -52,17 +106,17 @@ class _SettingsPageState extends State<SettingsPage> {
         ListTile(
           leading: Icon(Icons.logout, color: Colors.red),
           title: Text("Log Out"),
-          onTap: () => print("Log Out Placeholder"),
+          onTap: () => _logout(context),
         ),
       ],
     );
   }
 
   Widget _buildMotawifSettings() {
-    return ListView(
+    return Column(
       children: [
         ListTile(
-          leading: Icon(Icons.security, color: Colors.teal),
+          leading: Icon(Icons.dashboard_customize, color: Colors.teal),
           title: Text("Motawif Dashboard"),
           subtitle: Text("Manage assigned pilgrims"),
           trailing: Icon(Icons.arrow_forward_ios),
@@ -92,65 +146,19 @@ class _SettingsPageState extends State<SettingsPage> {
         centerTitle: true,
       ),
       backgroundColor: Colors.white,
-      body: Padding(
+      body: SingleChildScrollView(
         padding: EdgeInsets.all(16.0),
         child: Column(
           children: [
-            Expanded(
-              child: widget.userRole == 'Pilgrim'
-                  ? _buildPilgrimSettings()
-                  : _buildMotawifSettings(),
-            ),
-            ListTile(
-              leading: Icon(Icons.language, color: Colors.teal),
-              title: Text("Language"),
-              subtitle: Text(selectedLanguage),
-              trailing: DropdownButton<String>(
-                value: selectedLanguage,
-                items: ["English", "Arabic", "French"]
-                    .map((lang) => DropdownMenuItem(
-                          child: Text(lang),
-                          value: lang,
-                        ))
-                    .toList(),
-                onChanged: changeLanguage,
-              ),
-            ),
-            SwitchListTile(
-              title: Text("Dark Mode"),
-              value: darkModeEnabled,
-              onChanged: toggleDarkMode,
-              secondary: Icon(Icons.brightness_6, color: Colors.teal),
-            ),
-            ListTile(
-              leading: Icon(Icons.security, color: Colors.teal),
-              title: Text("Privacy & Security"),
-              subtitle: Text("Manage password & 2FA (Placeholder)"),
-              trailing: Icon(Icons.arrow_forward_ios),
-              onTap: () => print("Privacy & Security Placeholder"),
-            ),
-            ListTile(
-              leading: Icon(Icons.delete, color: Colors.red),
-              title: Text("Delete Account"),
-              onTap: () => print("Delete Account Placeholder"),
-            ),
-            ListTile(
-              leading: Icon(Icons.help, color: Colors.teal),
-              title: Text("Help & Support"),
-              subtitle: Text("FAQs and Customer Support"),
-              trailing: Icon(Icons.arrow_forward_ios),
-              onTap: () => print("Help & Support Placeholder"),
-            ),
+            if (widget.userRole.toLowerCase() == 'pilgrim')
+              _buildPilgrimSettings(),
+            if (widget.userRole.toLowerCase() == 'motawif')
+              _buildMotawifSettings(),
+            Divider(height: 40),
+            _buildCommonSettings(),
           ],
         ),
       ),
     );
   }
-}
-
-void _logout(BuildContext context) {
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(builder: (context) => LoginPage()),
-  );
 }

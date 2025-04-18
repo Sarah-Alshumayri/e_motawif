@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationsPage extends StatefulWidget {
-  final String userRole; // 'Pilgrim' or 'Motawif'
+  final String userRole;
 
   NotificationsPage({required this.userRole});
 
@@ -10,95 +14,107 @@ class NotificationsPage extends StatefulWidget {
 }
 
 class _NotificationsPageState extends State<NotificationsPage> {
-  // Sample data for Pilgrim notifications
-  final List<String> pilgrimNotifications = [
-    "You're location is out of bounds.",
-    "You will receive help immediately.",
-    "Your next step is to proceed to the gathering area.",
-  ];
+  final Color primaryColor = const Color(0xFF0D4A45);
+  List<Map<String, dynamic>> notifications = [];
 
-  // Sample data for Motawif notifications
-  final List<Map<String, dynamic>> motawifNotifications = [
-    {
-      "pilgrim": "Ahmed Ali",
-      "notification": "Please ensure Ahmed Ali reaches Mina."
-    },
-    {
-      "pilgrim": "Fatima Noor",
-      "notification": "Fatima Noor needs medical attention."
-    },
-    {
-      "pilgrim": "Omar Hasan",
-      "notification": "Omar Hasan is ready for his next step."
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchNotifications();
+  }
+
+  Future<void> _fetchNotifications() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('user_id');
+    if (userId == null) return;
+
+    final response = await http.post(
+      Uri.parse('http://10.0.2.2/e_motawif_new/get_notifications.php'),
+      body: {'user_id': userId},
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['success']) {
+        setState(() {
+          notifications =
+              List<Map<String, dynamic>>.from(data['notifications']);
+        });
+      }
+    } else {
+      print("❌ Failed to fetch notifications.");
+    }
+  }
+
+  String _formatTimestamp(String timestamp) {
+    try {
+      final dateTime = DateTime.parse(timestamp);
+      return DateFormat("MMM d, h:mm a").format(dateTime);
+    } catch (e) {
+      return timestamp;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Notifications', style: TextStyle(color: Colors.white)),
-        backgroundColor: Color(0xFF0D4A45),
+        title:
+            const Text('Notifications', style: TextStyle(color: Colors.white)),
+        backgroundColor: primaryColor,
+        iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
       ),
       backgroundColor: Colors.white,
       body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Notifications',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
-            widget.userRole == 'Pilgrim'
-                ? _buildPilgrimNotifications()
-                : _buildMotawifNotifications(),
-          ],
-        ),
-      ),
-    );
-  }
+        padding: const EdgeInsets.all(16.0),
+        child: notifications.isEmpty
+            ? const Center(child: Text("No notifications yet."))
+            : ListView.builder(
+                itemCount: notifications.length,
+                itemBuilder: (context, index) {
+                  final notif = notifications[index];
+                  final sender = notif['sender_name'] ?? 'System';
 
-  // For Pilgrims, show a list of general notifications
-  Widget _buildPilgrimNotifications() {
-    return Expanded(
-      child: ListView.builder(
-        itemCount: pilgrimNotifications.length,
-        itemBuilder: (context, index) {
-          return Card(
-            elevation: 3,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              title: Text(pilgrimNotifications[index],
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // For Motawif, show a list of assigned pilgrim notifications
-  Widget _buildMotawifNotifications() {
-    return Expanded(
-      child: ListView.builder(
-        itemCount: motawifNotifications.length,
-        itemBuilder: (context, index) {
-          final notification = motawifNotifications[index];
-          return Card(
-            elevation: 3,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            child: ListTile(
-              leading: Icon(Icons.person, color: Colors.teal),
-              title: Text(notification['pilgrim'],
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              subtitle: Text(notification['notification'],
-                  style: TextStyle(fontSize: 16, color: Colors.black54)),
-            ),
-          );
-        },
+                  return Card(
+                    elevation: 3,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: ListTile(
+                      leading:
+                          const Icon(Icons.notifications, color: Colors.teal),
+                      title: Text(
+                        notif['title'] ?? 'Notification',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "From: $sender",
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(notif['message'] ?? ''),
+                          const SizedBox(height: 6),
+                          Text(
+                            _formatTimestamp(notif['timestamp'] ?? ''),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
       ),
     );
   }

@@ -15,43 +15,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
-    // ✅ Check if user exists
-    $stmt = $conn->prepare("SELECT id, role, password FROM users WHERE user_id = ?");
-    $stmt->bind_param("s", $user_id);
-    $stmt->execute();
-    $result = $stmt->get_result();
+// ✅ Updated query to include name
+$stmt = $conn->prepare("SELECT id, role, password, name FROM users WHERE user_id = ?");
+$stmt->bind_param("s", $user_id);
+$stmt->execute();
+$result = $stmt->get_result();
 
-    if ($result->num_rows > 0) {
-        $user = $result->fetch_assoc();
-        $hashedPassword = $user["password"];
-        $role = $user["role"];
+if ($result->num_rows > 0) {
+    $user = $result->fetch_assoc();
+    $hashedPassword = $user["password"];
+    $role = $user["role"];
+    $name = $user["name"];  // ✅ Get the name from the database
 
-        // ✅ Pilgrim: check with password_verify (hashed)
-        if ($role === "pilgrim") {
-            if (password_verify($password, $hashedPassword)) {
-                echo json_encode([
-                    "status" => "success",
-                    "role" => $role,
-                    "user_id" => $user_id  // ✅ Return user_id to Flutter
-                ]);
-            } else {
-                echo json_encode(["status" => "error", "message" => "Invalid credentials"]);
-            }
+    if ($role === "pilgrim") {
+        if (password_verify($password, $hashedPassword)) {
+            echo json_encode([
+                "status" => "success",
+                "role" => $role,
+                "user_id" => $user_id,
+                "name" => $name  // ✅ Send name to Flutter
+            ]);
         } else {
-            // ✅ Motawif: plain text password (not hashed)
-            if ($password === $hashedPassword) {
-                echo json_encode([
-                    "status" => "success",
-                    "role" => $role,
-                    "user_id" => $user_id  // ✅ Return user_id to Flutter
-                ]);
-            } else {
-                echo json_encode(["status" => "error", "message" => "Invalid credentials"]);
-            }
+            echo json_encode(["status" => "error", "message" => "Invalid credentials"]);
         }
     } else {
-        echo json_encode(["status" => "error", "message" => "User not found"]);
+        if ($password === $hashedPassword) {
+            echo json_encode([
+                "status" => "success",
+                "role" => $role,
+                "user_id" => $user_id,
+                "name" => $name  // ✅ Send name to Flutter
+            ]);
+        } else {
+            echo json_encode(["status" => "error", "message" => "Invalid credentials"]);
+        }
     }
+} else {
+    echo json_encode(["status" => "error", "message" => "User not found"]);
+}
+
 } else {
     echo json_encode(["status" => "error", "message" => "Invalid request"]);
 }

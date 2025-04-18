@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'chat_page.dart';
 import 'real_time_tracking_page.dart';
 import 'health_monitoring_page.dart';
@@ -41,24 +42,38 @@ class PilgrimDashboardPage extends StatelessWidget {
             _buildDashboardTile(
               icon: Icons.chat,
               title: "Chat with $pilgrimName",
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ChatPage(
-                      motawifId: "MOTAWIF_ID", // Replace if needed
-                      pilgrimId: pilgrimId,
-                      pilgrimName: pilgrimName,
+              onTap: () async {
+                // ✅ Get current Motawif ID from SharedPreferences
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                String? motawifId = prefs.getString('user_id');
+
+                if (motawifId != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChatPage(
+                        motawifId: motawifId,
+                        pilgrimId: pilgrimId,
+                        pilgrimName: pilgrimName,
+                        userRole: "motawif", // ✅ Required now
+                      ),
                     ),
-                  ),
-                );
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content:
+                          Text("Motawif ID not found. Please log in again."),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
               },
             ),
             _buildDashboardTile(
               icon: Icons.location_on,
               title: "Real-Time Location",
               onTap: () {
-                // TODO: Enable this after adding pilgrimId to RealTimeTrackingPage
                 _showComingSoon(context, "Real-Time Tracking not set up yet.");
               },
             ),
@@ -66,7 +81,6 @@ class PilgrimDashboardPage extends StatelessWidget {
               icon: Icons.health_and_safety,
               title: "Health Monitoring",
               onTap: () {
-                // TODO: Enable this after adding pilgrimId to HealthMonitoringPage
                 _showComingSoon(
                     context, "Health Monitoring not connected yet.");
               },
@@ -84,7 +98,6 @@ class PilgrimDashboardPage extends StatelessWidget {
     );
   }
 
-  // 🌟 Overview Card
   Widget _buildOverviewCard() {
     return Card(
       elevation: 4,
@@ -117,7 +130,6 @@ class PilgrimDashboardPage extends StatelessWidget {
     );
   }
 
-  // ❤️ Health Snapshot
   Widget _buildHealthSnapshot() {
     return Card(
       elevation: 4,
@@ -147,7 +159,6 @@ class PilgrimDashboardPage extends StatelessWidget {
     );
   }
 
-  // 📍 Location Snapshot
   Widget _buildLocationCard(BuildContext context) {
     return Card(
       elevation: 4,
@@ -179,7 +190,6 @@ class PilgrimDashboardPage extends StatelessWidget {
     );
   }
 
-  // 📌 Section Title
   Widget _buildSectionTitle(String title) {
     return Align(
       alignment: Alignment.centerLeft,
@@ -191,7 +201,6 @@ class PilgrimDashboardPage extends StatelessWidget {
     );
   }
 
-  // ⚡ Dashboard Tile
   Widget _buildDashboardTile({
     required IconData icon,
     required String title,
@@ -211,7 +220,6 @@ class PilgrimDashboardPage extends StatelessWidget {
     );
   }
 
-  // 🔔 Placeholder Toast
   void _showComingSoon(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: const Duration(seconds: 2)),

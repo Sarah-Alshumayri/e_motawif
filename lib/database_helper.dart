@@ -93,9 +93,15 @@ class DatabaseHelper {
 
       if (response.statusCode == 200) {
         var jsonResponse = jsonDecode(response.body);
-        return jsonResponse is Map<String, dynamic>
-            ? jsonResponse
-            : {"status": "error", "message": "Invalid server response format"};
+
+        if (jsonResponse["status"] == "success") {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString("user_id", jsonResponse["user_id"]);
+          await prefs.setString(
+              "user_name", jsonResponse["name"]); // ✅ Save name here
+        }
+
+        return jsonResponse;
       } else {
         return {
           "status": "error",

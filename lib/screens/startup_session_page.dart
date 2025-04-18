@@ -27,6 +27,7 @@ class StartupSessionPageState extends State<StartupSessionPage> {
   List<Map<String, dynamic>> assignedPilgrims = [];
   String? selectedPilgrimId;
   String motawifName = "";
+  String motawifId = ""; // ✅ New
 
   @override
   void initState() {
@@ -79,10 +80,9 @@ class StartupSessionPageState extends State<StartupSessionPage> {
       if (data['success']) {
         setState(() {
           motawifName = data['motawif_name'];
+          motawifId = data['motawif_id']; // ✅ store Motawif ID
         });
       }
-    } else {
-      print('❌ Failed to fetch motawif name');
     }
   }
 
@@ -206,7 +206,10 @@ class StartupSessionPageState extends State<StartupSessionPage> {
     );
   }
 
-  void _showChatDropdown() {
+  void _showChatDropdown() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? currentMotawifId = prefs.getString('user_id');
+
     showDialog(
       context: context,
       builder: (context) {
@@ -239,17 +242,19 @@ class StartupSessionPageState extends State<StartupSessionPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (selectedPilgrimId != null) {
+                if (selectedPilgrimId != null && currentMotawifId != null) {
                   final selectedPilgrim = assignedPilgrims
                       .firstWhere((p) => p['user_id'] == selectedPilgrimId);
+
                   Navigator.pop(context);
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => ChatPage(
-                        motawifId: "MOTAWIF_ID",
+                        motawifId: currentMotawifId,
                         pilgrimId: selectedPilgrim['user_id'],
                         pilgrimName: selectedPilgrim['name'],
+                        userRole: "motawif", // ✅ Added
                       ),
                     ),
                   );
@@ -277,15 +282,141 @@ class StartupSessionPageState extends State<StartupSessionPage> {
                     fontWeight: FontWeight.bold,
                     color: primaryColor)),
             const SizedBox(height: 10),
-            ListTile(
-              leading: const Icon(Icons.person_outline, color: Colors.blue),
-              title: Text(
-                motawifName.isNotEmpty ? motawifName : "Loading...",
-                style: const TextStyle(fontWeight: FontWeight.bold),
+            GestureDetector(
+              onTap: _showMotawifOptions,
+              child: ListTile(
+                leading: const Icon(Icons.person_outline, color: Colors.blue),
+                title: Text(
+                  motawifName.isNotEmpty ? motawifName : "Loading...",
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      decoration: TextDecoration.underline),
+                ),
+                subtitle: const Text("Tap to interact"),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showMotawifOptions() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? pilgrimId = prefs.getString('user_id');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Motawif Options"),
+        content: const Text("What would you like to do?"),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showMotawifSummary();
+            },
+            child: const Text("View Info"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatPage(
+                    motawifId: motawifId,
+                    pilgrimId: pilgrimId ?? "",
+                    pilgrimName: "Motawif",
+                    userRole: "pilgrim", // ✅ Added
+                  ),
+                ),
+              );
+            },
+            child: const Text("Start Chat"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMotawifSummary() async {
+    final response = await http.post(
+      Uri.parse('http://10.0.2.2/e_motawif_new/get_user_profile.php'),
+      body: {'user_id': motawifId},
+    );
+
+    if (response.statusCode == 200) {
+      final json = jsonDecode(response.body);
+      if (json['status'] == 'success') {
+        final user = json['data'];
+        showDialog(
+          context: context,
+          builder: (context) => Dialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const CircleAvatar(
+                    radius: 35,
+                    backgroundColor: Colors.teal,
+                    child: Icon(Icons.person, size: 40, color: Colors.white),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(user['name'],
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0D4A45))),
+                  const SizedBox(height: 10),
+                  _buildProfileRow("🆔 ID", user['user_id'] ?? ''),
+                  _buildProfileRow("📧 Email", user['email'] ?? ''),
+                  _buildProfileRow("📞 Phone", user['phone'] ?? ''),
+                  if ((user['dob'] ?? '').isNotEmpty)
+                    _buildProfileRow("🎂 DOB", user['dob']),
+                  if ((user['emergencyContact'] ?? '').isNotEmpty)
+                    _buildProfileRow("🚨 Emergency", user['emergencyContact']),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0D4A45),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 30, vertical: 12),
+                    ),
+                    child: const Text("Close", style: TextStyle(fontSize: 16)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      } else {
+        _showErrorDialog("Motawif not found.");
+      }
+    } else {
+      _showErrorDialog("Failed to fetch motawif data.");
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Error"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("OK"),
+          )
+        ],
       ),
     );
   }
@@ -311,5 +442,30 @@ class StartupSessionPageState extends State<StartupSessionPage> {
         ),
       );
     }
+  }
+
+  Widget _buildProfileRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "$label: ",
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(color: Colors.black87),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
