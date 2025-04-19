@@ -23,3 +23,7 @@ CMD: "C:\Users\Samal\AppData\Local\Programs\Python\Python313\python.exe" semanti
 CMD: "C:\Users\Samal\AppData\Local\Programs\Python\Python313\python.exe" semantic_fuzzy_matcher.py "bag" "bag" "mena" "14/04/2025"
 CMD: "C:\Users\Samal\AppData\Local\Programs\Python\Python313\python.exe" semantic_fuzzy_matcher.py "bag" "bag" "m" "15/04/2025"
 CMD: "C:\Users\Samal\AppData\Local\Programs\Python\Python313\python.exe" semantic_fuzzy_matcher.py "bag" "bag" "makkah" "15/04/2025"
+CMD: "C:\Users\Samal\AppData\Local\Programs\Python\Python313\python.exe" semantic_fuzzy_matcher.py "t" "test" "test" "19/04/2025"
+CMD: "C:\Users\Samal\AppData\Local\Programs\Python\Python313\python.exe" semantic_fuzzy_matcher.py "t" "test" "test" "19/04/2025"
+CMD: "C:\Users\Samal\AppData\Local\Programs\Python\Python313\python.exe" semantic_fuzzy_matcher.py "t" "test" "test" "19/04/2025"
+CMD: "C:\Users\Samal\AppData\Local\Programs\Python\Python313\python.exe" semantic_fuzzy_matcher.py "test" "test" "test" "19/04/2025"

@@ -59,7 +59,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Column(
               children: [
-                Image.asset('assets/images/e_motawif_logo.png', height: 200),
+                Image.asset('assets/images/e_motawif_logo.png', height: 300),
                 const SizedBox(height: 20),
                 const Text(
                   "Forgot Password",

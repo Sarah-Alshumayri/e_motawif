@@ -27,16 +27,25 @@ class StartupSessionPageState extends State<StartupSessionPage> {
   List<Map<String, dynamic>> assignedPilgrims = [];
   String? selectedPilgrimId;
   String motawifName = "";
-  String motawifId = ""; // ✅ New
+  String motawifId = "";
+  String userName = ""; // ✅ NEW
 
   @override
   void initState() {
     super.initState();
+    _loadUserName(); // ✅ NEW
     if (widget.userRole.toLowerCase() == "motawif") {
       fetchAssignedPilgrims();
     } else if (widget.userRole.toLowerCase() == "pilgrim") {
       fetchMotawifNameForPilgrim();
     }
+  }
+
+  Future<void> _loadUserName() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userName = prefs.getString('name') ?? widget.userRole;
+    });
   }
 
   Future<void> fetchAssignedPilgrims() async {
@@ -80,7 +89,7 @@ class StartupSessionPageState extends State<StartupSessionPage> {
       if (data['success']) {
         setState(() {
           motawifName = data['motawif_name'];
-          motawifId = data['motawif_id']; // ✅ store Motawif ID
+          motawifId = data['motawif_id'];
         });
       }
     }
@@ -91,7 +100,7 @@ class StartupSessionPageState extends State<StartupSessionPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("Welcome, ${widget.userRole}!",
+        title: Text("Welcome, $userName!", // ✅ UPDATED
             style: const TextStyle(color: Colors.white)),
         backgroundColor: primaryColor,
         centerTitle: true,
@@ -254,7 +263,7 @@ class StartupSessionPageState extends State<StartupSessionPage> {
                         motawifId: currentMotawifId,
                         pilgrimId: selectedPilgrim['user_id'],
                         pilgrimName: selectedPilgrim['name'],
-                        userRole: "motawif", // ✅ Added
+                        userRole: "motawif",
                       ),
                     ),
                   );
@@ -328,7 +337,7 @@ class StartupSessionPageState extends State<StartupSessionPage> {
                     motawifId: motawifId,
                     pilgrimId: pilgrimId ?? "",
                     pilgrimName: "Motawif",
-                    userRole: "pilgrim", // ✅ Added
+                    userRole: "pilgrim",
                   ),
                 ),
               );
