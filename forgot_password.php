@@ -60,7 +60,7 @@ try {
     $mail->setFrom('emotawif@gmail.com', 'E-Motawif');
     $mail->addAddress($email, $name);
     $mail->Subject = 'E-Motawif Password Reset';
-    $mail->Body    = "Dear $name,\n\nClick the link below to reset your password:\n\nhttp://192.168.56.1/e_motawif_new/reset_password.php?user_id=$user_id\n\nThank you,\nE-Motawif Team";
+    $mail->Body    = "Dear $name,\n\nClick the link below to reset your password:\n\nhttp://10.0.2.2/e_motawif_new/reset_password.php?user_id=$user_id\n\nThank you,\nE-Motawif Team";
 
     $mail->send();
     echo json_encode(["status" => "success", "email" => $email]);

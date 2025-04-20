@@ -122,7 +122,8 @@ class _ResidencyAllocationPageState extends State<ResidencyAllocationPage> {
                           loc['hotel_name'], loc['hotel_location']),
                       style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.teal),
-                      child: Text("View on Map"),
+                      child: Text("View on Map",
+                          style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 class HelpPage extends StatefulWidget {
+  final bool isEmbedded;
+
+  HelpPage({this.isEmbedded = false});
+
   @override
   _HelpPageState createState() => _HelpPageState();
 }
@@ -25,34 +29,60 @@ class _HelpPageState extends State<HelpPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title:
-            const Text("Help & Support", style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF0D4A45),
-        centerTitle: true,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Colors.white,
-          indicatorColor: Colors.yellow,
-          tabs: const [
-            Tab(icon: Icon(Icons.smartphone), text: "Using App"),
-            Tab(icon: Icon(Icons.help), text: "FAQ"),
-            Tab(icon: Icon(Icons.settings), text: "Tech Help"),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildUsingAppSection(),
-          _buildFAQSection(),
-          _buildTechHelpSection(),
-        ],
-      ),
+      appBar: widget.isEmbedded
+          ? null
+          : AppBar(
+              title: const Text("Help & Support",
+                  style: TextStyle(color: Colors.white)),
+              backgroundColor: const Color(0xFF0D4A45),
+              centerTitle: true,
+              bottom: TabBar(
+                controller: _tabController,
+                labelColor: Colors.white,
+                indicatorColor: Colors.yellow,
+                tabs: const [
+                  Tab(icon: Icon(Icons.smartphone), text: "Using App"),
+                  Tab(icon: Icon(Icons.help), text: "FAQ"),
+                  Tab(icon: Icon(Icons.settings), text: "Tech Help"),
+                ],
+              ),
+            ),
+      body: widget.isEmbedded
+          ? Column(
+              children: [
+                TabBar(
+                  controller: _tabController,
+                  labelColor: Colors.teal,
+                  indicatorColor: Colors.teal,
+                  tabs: const [
+                    Tab(icon: Icon(Icons.smartphone), text: "Using App"),
+                    Tab(icon: Icon(Icons.help), text: "FAQ"),
+                    Tab(icon: Icon(Icons.settings), text: "Tech Help"),
+                  ],
+                ),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildUsingAppSection(),
+                      _buildFAQSection(),
+                      _buildTechHelpSection(),
+                    ],
+                  ),
+                )
+              ],
+            )
+          : TabBarView(
+              controller: _tabController,
+              children: [
+                _buildUsingAppSection(),
+                _buildFAQSection(),
+                _buildTechHelpSection(),
+              ],
+            ),
     );
   }
 
-  /// 📲 Section 1: Using This App (Guides & How-to Tutorials)
   Widget _buildUsingAppSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -73,7 +103,6 @@ class _HelpPageState extends State<HelpPage>
     );
   }
 
-  /// 📖 Section 2: Frequently Asked Questions (Expandable List)
   Widget _buildFAQSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -92,7 +121,6 @@ class _HelpPageState extends State<HelpPage>
     );
   }
 
-  /// 🛠️ Section 3: Technical Help (Troubleshooting & Support)
   Widget _buildTechHelpSection() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -113,7 +141,6 @@ class _HelpPageState extends State<HelpPage>
     );
   }
 
-  /// 🔹 Widget: Help Card (For Using App & Technical Help Sections)
   Widget _buildHelpCard(IconData icon, String title, String description) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -130,7 +157,6 @@ class _HelpPageState extends State<HelpPage>
     );
   }
 
-  /// 🔹 Widget: Expandable FAQ Item
   Widget _buildFAQItem(String question, String answer) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -148,7 +174,6 @@ class _HelpPageState extends State<HelpPage>
     );
   }
 
-  /// 🏆 Dialog for Help Card Details
   void _showDetailsDialog(String title, String description) {
     showDialog(
       context: context,

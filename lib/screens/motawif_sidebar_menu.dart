@@ -12,7 +12,8 @@ import 'settings_page.dart';
 import 'notifications_page.dart';
 import 'help_page.dart';
 import 'task_schedule_page.dart';
-//import 'tracking_page.dart';
+import 'package:e_motawif_new/screens/startup_session_page.dart';
+// import 'tracking_page.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -66,6 +67,18 @@ class _MotawifSidebarMenuState extends State<MotawifSidebarMenu> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => StartupSessionPage(
+                        userRole: 'motawif',
+                      )),
+            );
+          },
+        ),
         title: const Text(
           "Motawif Dashboard",
           style: TextStyle(color: Colors.white),
@@ -99,14 +112,6 @@ class _MotawifSidebarMenuState extends State<MotawifSidebarMenu> {
         padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
-            const Text(
-              "Welcome, Motawif!",
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0D4A45),
-              ),
-            ),
             const SizedBox(height: 10),
             if (assignedPilgrims.isNotEmpty) ...[
               const Text(

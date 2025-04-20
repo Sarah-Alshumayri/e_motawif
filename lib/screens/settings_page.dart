@@ -1,5 +1,7 @@
+import 'package:e_motawif_new/screens/help_page.dart';
 import 'package:flutter/material.dart';
 import 'login_page.dart';
+import 'package:e_motawif_new/screens/pilgrim_profile_page.dart';
 
 class SettingsPage extends StatefulWidget {
   final String userRole; // 'Pilgrim' or 'Motawif'
@@ -40,6 +42,30 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  void _showPrivacyDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("🔒 Privacy & Security"),
+        content: SingleChildScrollView(
+          child: Text(
+            "At E-Motawif, the privacy and security of our pilgrims' data is our top priority. "
+            "We utilize modern encryption techniques, including SHA-1 and advanced cryptographic methods, "
+            "to protect all personal and sensitive information.\n\n"
+            "Your data is securely stored and handled according to industry best practices.",
+            style: TextStyle(fontSize: 15),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Close", style: TextStyle(color: Colors.teal)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCommonSettings() {
     return Column(
       children: [
@@ -69,7 +95,7 @@ class _SettingsPageState extends State<SettingsPage> {
           title: Text("Privacy & Security"),
           subtitle: Text("Manage password & 2FA"),
           trailing: Icon(Icons.arrow_forward_ios),
-          onTap: () => print("Privacy & Security Placeholder"),
+          onTap: _showPrivacyDialog,
         ),
         ListTile(
           leading: Icon(Icons.delete, color: Colors.red),
@@ -81,7 +107,12 @@ class _SettingsPageState extends State<SettingsPage> {
           title: Text("Help & Support"),
           subtitle: Text("FAQs and Customer Support"),
           trailing: Icon(Icons.arrow_forward_ios),
-          onTap: () => print("Help & Support Placeholder"),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => HelpPage()),
+            );
+          },
         ),
       ],
     );
@@ -95,7 +126,12 @@ class _SettingsPageState extends State<SettingsPage> {
           title: Text("Profile Management"),
           subtitle: Text("Edit name, email, and profile picture"),
           trailing: Icon(Icons.arrow_forward_ios),
-          onTap: () => print("Profile Management Placeholder"),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => PilgrimProfilePage()),
+            );
+          },
         ),
         SwitchListTile(
           title: Text("Enable Notifications"),

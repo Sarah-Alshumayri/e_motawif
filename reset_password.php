@@ -4,8 +4,9 @@ include 'config.php';
 $user_id = $_GET['user_id'] ?? '';
 $message = "";
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $newPassword = $_POST['new_password'];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['new_password'])) {
+  $newPassword = trim($_POST['new_password']);
+
 
     if (empty($newPassword)) {
         $message = "Password cannot be empty.";
