@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class SOSEmergencyPage extends StatefulWidget {
   @override
@@ -8,15 +12,82 @@ class SOSEmergencyPage extends StatefulWidget {
 class _SOSEmergencyPageState extends State<SOSEmergencyPage> {
   bool isAlertSent = false;
 
-  void triggerSOS() {
+  Future<void> _sendSosAlert(String message) async {
     setState(() {
       isAlertSent = true;
     });
-    // Simulate sending location or contacting emergency services
-    Future.delayed(Duration(seconds: 3), () {
-      setState(() {
-        isAlertSent = false;
-      });
+
+    try {
+      // 🔐 Check if location service is enabled
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Location services are disabled.")),
+        );
+        return;
+      }
+
+      // 📲 Check and request permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Location permission denied.")),
+          );
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text("Location permissions are permanently denied.")),
+        );
+        return;
+      }
+
+      // ✅ Now safe to get location
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      int? userId = prefs.getInt('user_id');
+
+      if (userId == null) {
+        throw Exception("User ID not found in local storage");
+      }
+
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2/e_motawif_new/send_sos_alert.php'),
+        body: {
+          'user_id': userId.toString(),
+          'latitude': position.latitude.toString(),
+          'longitude': position.longitude.toString(),
+          'message': message,
+        },
+      );
+
+      final json = jsonDecode(response.body);
+      if (json['success']) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("🚨 SOS sent: $message")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to send SOS")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: ${e.toString()}")),
+      );
+    }
+
+    await Future.delayed(Duration(seconds: 3));
+    setState(() {
+      isAlertSent = false;
     });
   }
 
@@ -49,7 +120,7 @@ class _SOSEmergencyPageState extends State<SOSEmergencyPage> {
             ),
             SizedBox(height: 30),
             ElevatedButton(
-              onPressed: triggerSOS,
+              onPressed: () => _sendSosAlert("General SOS"),
               style: ElevatedButton.styleFrom(
                 shape: CircleBorder(),
                 padding: EdgeInsets.all(50),
@@ -98,8 +169,8 @@ class _SOSEmergencyPageState extends State<SOSEmergencyPage> {
         IconButton(
           icon: Icon(icon, size: 40, color: Colors.teal),
           onPressed: () {
-            // TODO: Implement call functionality
-          }, // Implement call functionality
+            // Later: implement emergency call or contact info
+          },
         ),
         Text(label),
       ],
@@ -110,9 +181,7 @@ class _SOSEmergencyPageState extends State<SOSEmergencyPage> {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 5),
       child: ElevatedButton(
-        onPressed: () {
-          // TODO: Implement call functionality
-        }, // Implement sending message functionality
+        onPressed: () => _sendSosAlert(message),
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.orange,
           foregroundColor: Colors.white,

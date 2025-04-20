@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
-import 'sos_emergency_user.dart';
+import 'sos_emergency_motiwf_page.dart';
 import 'lost_found_page.dart';
 import 'customer_support_page.dart';
 import 'startup_session_page.dart';
@@ -12,8 +12,6 @@ import 'settings_page.dart';
 import 'notifications_page.dart';
 import 'help_page.dart';
 import 'task_schedule_page.dart';
-//import 'tracking_page.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -168,7 +166,7 @@ class _MotawifSidebarMenuState extends State<MotawifSidebarMenu> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => SOSEmergencyPage()),
+                  MaterialPageRoute(builder: (_) => SOSEmergencyMotiwfPage()),
                 );
               },
             ),
