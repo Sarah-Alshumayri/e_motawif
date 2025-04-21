@@ -116,7 +116,7 @@ class _PilgrimListPageState extends State<PilgrimListPage> {
                               context,
                               MaterialPageRoute(
                                   builder: (context) =>
-                                      SOSEmergencyMotiwfPage()),
+                                      SOSEmergencyMotawifPage()),
                             );
                           }
                         },

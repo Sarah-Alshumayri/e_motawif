@@ -38,8 +38,8 @@ class _MotawifSidebarMenuState extends State<MotawifSidebarMenu> {
 
     if (motawifId == null) return;
 
-    final url = Uri.parse(
-        'http://192.168.56.1/e_motawif_new/get_assigned_pilgrims.php');
+    final url =
+        Uri.parse('http://10.0.2.2/e_motawif_new/get_assigned_pilgrims.php');
     final response = await http.post(url, body: {
       'motawif_id': motawifId!,
     });
@@ -166,7 +166,7 @@ class _MotawifSidebarMenuState extends State<MotawifSidebarMenu> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => SOSEmergencyMotiwfPage()),
+                  MaterialPageRoute(builder: (_) => SOSEmergencyMotawifPage()),
                 );
               },
             ),

@@ -1,7 +1,9 @@
 <?php
-ob_start();
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+header('Content-Type: application/json'); // Ensure ONLY JSON is returned
+
+// Optional: turn off error display to avoid HTML output
+error_reporting(0);
+ini_set('display_errors', 0);
 
 $host = "localhost";
 $user = "root";
@@ -12,8 +14,10 @@ $conn = new mysqli($host, $user, $password, $database);
 
 if ($conn->connect_error) {
     http_response_code(500);
-    die(json_encode([
+    echo json_encode([
         "success" => false,
         "message" => "Database connection failed: " . $conn->connect_error
-    ]));
+    ]);
+    exit();
 }
+?>

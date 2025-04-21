@@ -75,7 +75,7 @@ class _SplashScreenState extends State<SplashScreen>
               opacity: _fadeAnimation,
               child: Image.asset(
                 'assets/images/e_motawif_logo.png',
-                height: 250,
+                height: 300,
               ),
             ),
             const SizedBox(height: 10),

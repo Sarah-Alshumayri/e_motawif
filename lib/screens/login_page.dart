@@ -54,7 +54,7 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 Image.asset(
                   'assets/images/e_motawif_logo.png',
-                  height: 200,
+                  height: 300,
                 ),
                 const SizedBox(height: 20),
                 const Text(

@@ -53,16 +53,17 @@ class _SOSEmergencyPageState extends State<SOSEmergencyPage> {
       );
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
-      int? userId = prefs.getInt('user_id');
+      dynamic rawId = prefs.get('user_id');
+      int? userId = rawId is int ? rawId : int.tryParse(rawId.toString());
 
       if (userId == null) {
         throw Exception("User ID not found in local storage");
       }
 
       final response = await http.post(
-        Uri.parse('http://10.0.2.2/e_motawif_new/send_sos_alert.php'),
+        Uri.parse('http://10.0.2.2/e_motawif_new/send_emergency_alert.php'),
         body: {
-          'user_id': userId.toString(),
+          'user_id': userId.toString(), // updated from 'user_id'
           'latitude': position.latitude.toString(),
           'longitude': position.longitude.toString(),
           'message': message,

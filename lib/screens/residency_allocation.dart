@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:url_launcher/url_launcher_string.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ResidencyAllocationPage extends StatefulWidget {
-  final String userType; // 'Pilgrim' or 'Motawif'
+  final String userType;
 
   ResidencyAllocationPage({required this.userType});
 
@@ -11,28 +15,59 @@ class ResidencyAllocationPage extends StatefulWidget {
 }
 
 class _ResidencyAllocationPageState extends State<ResidencyAllocationPage> {
-  // Sample data (Placeholder until backend is implemented)
-  final Map<String, dynamic> pilgrimResidence = {
-    'residenceID': 'H12345',
-    'hotelName': 'Makkah Grand Hotel',
-    'hotelLocation': 'Near Masjid Al-Haram',
-    'motawifGuide': 'Ali Abdullah',
-  };
+  List<Map<String, dynamic>> pilgrimLocations = [];
+  bool isLoading = true;
 
-  final List<Map<String, dynamic>> motawifResidences = [
-    {
-      'residenceID': 'R001',
-      'hotelName': 'Mina Tent 5A',
-      'hotelLocation': 'Mina Camp Area 5',
-      'pilgrims': ['Ahmed Ali', 'Fatima Noor', 'Omar Hasan'],
-    },
-    {
-      'residenceID': 'R002',
-      'hotelName': 'Hilton Makkah Suites',
-      'hotelLocation': 'Opposite Masjid Al-Haram',
-      'pilgrims': ['Aisha Khan', 'Yusuf Kareem'],
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    if (widget.userType == 'Pilgrim') {
+      fetchLocationsForPilgrim();
+    } else {
+      setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> fetchLocationsForPilgrim() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString('user_id');
+
+    if (userId == null) {
+      print("❌ No user_id found in SharedPreferences");
+      setState(() => isLoading = false);
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2/e_motawif_new/get_locations_by_pilgrim.php'),
+        body: {'pilgrim_id': userId},
+      );
+
+      print("🔁 STATUS CODE: ${response.statusCode}");
+      print("🔁 BODY: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success']) {
+          setState(() {
+            pilgrimLocations =
+                List<Map<String, dynamic>>.from(data['locations']);
+            isLoading = false;
+          });
+        } else {
+          print("❌ Backend error: ${data['message'] ?? 'Unknown error'}");
+          setState(() => isLoading = false);
+        }
+      } else {
+        print("❌ Failed to fetch locations. HTTP ${response.statusCode}");
+        setState(() => isLoading = false);
+      }
+    } catch (e) {
+      print("❌ Exception during fetch: $e");
+      setState(() => isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,94 +83,65 @@ class _ResidencyAllocationPageState extends State<ResidencyAllocationPage> {
         padding: EdgeInsets.all(16.0),
         child: widget.userType == 'Pilgrim'
             ? _buildPilgrimView()
-            : _buildMotawifView(),
+            : Center(child: Text("This page is only for Pilgrims.")),
       ),
     );
   }
 
-  // UI for Pilgrims
   Widget _buildPilgrimView() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    if (isLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    if (pilgrimLocations.isEmpty) {
+      return Center(child: Text('No accommodation found.'));
+    }
+
+    return ListView(
       children: [
         Text('Your Accommodation',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         SizedBox(height: 10),
-        Card(
-          elevation: 3,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Hotel: ${pilgrimResidence['hotelName']}',
-                    style:
-                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Text('Location: ${pilgrimResidence['hotelLocation']}',
-                    style: TextStyle(fontSize: 16, color: Colors.black54)),
-                Text('Motawif Guide: ${pilgrimResidence['motawifGuide']}',
-                    style: TextStyle(fontSize: 16, color: Colors.black54)),
-                SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: () => print("View Hotel Location Placeholder"),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-                  child: Text("View on Map"),
+        ...pilgrimLocations.map((loc) => Card(
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Hotel: ${loc['hotel_name']}',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    Text('Location: ${loc['hotel_location']}',
+                        style: TextStyle(fontSize: 16, color: Colors.black54)),
+                    SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: () => _openGoogleMaps(
+                          loc['hotel_name'], loc['hotel_location']),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal),
+                      child: Text("View on Map"),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        ),
+              ),
+            )),
       ],
     );
   }
 
-  // UI for Motawif Guides
-  Widget _buildMotawifView() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('Residences You Manage',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-        SizedBox(height: 10),
-        Expanded(
-          child: ListView.builder(
-            itemCount: motawifResidences.length,
-            itemBuilder: (context, index) {
-              final residence = motawifResidences[index];
-              return Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                child: ListTile(
-                  title: Text(residence['hotelName'],
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Location: ${residence['hotelLocation']}',
-                          style: TextStyle(color: Colors.black54)),
-                      Text('Pilgrims: ${residence['pilgrims'].join(', ')}',
-                          style: TextStyle(color: Colors.black54)),
-                    ],
-                  ),
-                  trailing: ElevatedButton(
-                    onPressed: () => print("Update Residency Placeholder"),
-                    style:
-                        ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-                    child: Text(
-                      "Manage",
-                      style: TextStyle(
-                          color: Colors.white), // Text color changed to white
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
+  void _openGoogleMaps(String hotel, String location) async {
+    final query = Uri.encodeComponent("$hotel $location Makkah");
+    final url = "https://www.google.com/maps/search/?api=1&query=$query";
+
+    if (await canLaunchUrlString(url)) {
+      await launchUrlString(url);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Could not launch Google Maps")),
+      );
+    }
   }
 }

@@ -25,7 +25,10 @@ class DebugScreen extends StatelessWidget {
     {'name': 'Forgot Password Page', 'widget': ForgotPasswordPage()},
     //{'name': 'Services Page', 'widget': ServicesPage()},
     {'name': 'SOS Emergency Page', 'widget': SOSEmergencyPage()},
-    {'name': 'SOS Emergency Page (Motiwf)', 'widget': SOSEmergencyMotiwfPage()},
+    {
+      'name': 'SOS Emergency Page (Motiwf)',
+      'widget': SOSEmergencyMotawifPage()
+    },
     //{'name': 'Lost & Found Page', 'widget': LostFoundPage()},
     {
       'name': 'Startup Session Page',
