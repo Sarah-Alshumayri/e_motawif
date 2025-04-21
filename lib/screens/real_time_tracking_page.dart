@@ -212,6 +212,8 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
             Text('Real-Time Tracking', style: TextStyle(color: Colors.white)),
         backgroundColor: Color(0xFF0D4A45),
         centerTitle: true,
+        iconTheme:
+            IconThemeData(color: Colors.white), // ✅ Makes back arrow white
       ),
       backgroundColor: Colors.white,
       body: Padding(

@@ -215,6 +215,8 @@ class _TaskSchedulePageState extends State<TaskSchedulePage> {
             style: TextStyle(color: Colors.white)),
         backgroundColor: primaryColor,
         centerTitle: true,
+        iconTheme:
+            IconThemeData(color: Colors.white), // ✅ Makes back arrow white
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addOrEditTask(),

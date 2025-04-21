@@ -15,6 +15,8 @@ class _CustomerSupportPageState extends State<CustomerSupportPage> {
         title: Text('Customer Support', style: TextStyle(color: Colors.white)),
         backgroundColor: Color(0xFF0D4A45),
         centerTitle: true,
+        iconTheme:
+            IconThemeData(color: Colors.white), // ✅ Makes back arrow white
       ),
       backgroundColor: Colors.white,
       body: Padding(

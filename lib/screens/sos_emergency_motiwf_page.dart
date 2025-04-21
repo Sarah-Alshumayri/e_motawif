@@ -174,6 +174,8 @@ class _SOSEmergencyMotawifPageState extends State<SOSEmergencyMotawifPage> {
         title: Text("SOS Emergency - Motawif",
             style: TextStyle(color: Colors.white)),
         centerTitle: true,
+        iconTheme:
+            IconThemeData(color: Colors.white), // ✅ Makes back arrow white
       ),
       backgroundColor: Colors.white,
       body: isLoading

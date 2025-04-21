@@ -99,6 +99,8 @@ class _SOSEmergencyPageState extends State<SOSEmergencyPage> {
         backgroundColor: Colors.red,
         title: Text("SOS Emergency", style: TextStyle(color: Colors.white)),
         centerTitle: true,
+        iconTheme:
+            IconThemeData(color: Colors.white), // ✅ Makes back arrow white
       ),
       backgroundColor: Colors.white,
       body: Padding(

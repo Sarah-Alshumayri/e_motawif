@@ -52,6 +52,8 @@ class _RitualGuidancePageState extends State<RitualGuidancePage> {
         title: Text('Ritual Guidance', style: TextStyle(color: Colors.white)),
         backgroundColor: Color(0xFF0D4A45), // Match Services Page color
         centerTitle: true,
+        iconTheme:
+            IconThemeData(color: Colors.white), // ✅ Makes back arrow white
       ),
       backgroundColor: Colors.white,
       body: Padding(

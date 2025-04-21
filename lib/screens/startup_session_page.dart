@@ -100,11 +100,16 @@ class StartupSessionPageState extends State<StartupSessionPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("Welcome, $userName!", // ✅ UPDATED
-            style: const TextStyle(color: Colors.white)),
+        title: Text(
+          widget.userRole.toLowerCase() == 'pilgrim'
+              ? "Welcome, $userName!"
+              : userName,
+          style: const TextStyle(color: Colors.white),
+        ),
         backgroundColor: primaryColor,
         centerTitle: true,
         elevation: 0,
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -163,7 +168,7 @@ class StartupSessionPageState extends State<StartupSessionPage> {
   Widget _buildWelcomeMessage() {
     return Text(
       widget.userRole.toLowerCase() == "pilgrim"
-          ? "Welcome! Your Motawif is ${motawifName.isNotEmpty ? motawifName : "Loading..."}."
+          ? "E-Motawif is here to ensure your Hajj experience is clear, safe, and connected."
           : "Welcome back, Motawif. Ready to guide your pilgrims?",
       style: TextStyle(
           fontSize: 20, fontWeight: FontWeight.bold, color: primaryColor),
@@ -325,7 +330,8 @@ class StartupSessionPageState extends State<StartupSessionPage> {
               Navigator.pop(context);
               _showMotawifSummary();
             },
-            child: const Text("View Info"),
+            child:
+                const Text("View Info", style: TextStyle(color: Colors.black)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -342,7 +348,8 @@ class StartupSessionPageState extends State<StartupSessionPage> {
                 ),
               );
             },
-            child: const Text("Start Chat"),
+            child:
+                const Text("Start Chat", style: TextStyle(color: Colors.black)),
           ),
         ],
       ),
@@ -382,13 +389,8 @@ class StartupSessionPageState extends State<StartupSessionPage> {
                           fontWeight: FontWeight.bold,
                           color: Color(0xFF0D4A45))),
                   const SizedBox(height: 10),
-                  _buildProfileRow("🆔 ID", user['user_id'] ?? ''),
                   _buildProfileRow("📧 Email", user['email'] ?? ''),
                   _buildProfileRow("📞 Phone", user['phone'] ?? ''),
-                  if ((user['dob'] ?? '').isNotEmpty)
-                    _buildProfileRow("🎂 DOB", user['dob']),
-                  if ((user['emergencyContact'] ?? '').isNotEmpty)
-                    _buildProfileRow("🚨 Emergency", user['emergencyContact']),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
@@ -399,7 +401,8 @@ class StartupSessionPageState extends State<StartupSessionPage> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 30, vertical: 12),
                     ),
-                    child: const Text("Close", style: TextStyle(fontSize: 16)),
+                    child: const Text("Close",
+                        style: TextStyle(fontSize: 16, color: Colors.white)),
                   ),
                 ],
               ),
@@ -438,7 +441,7 @@ class StartupSessionPageState extends State<StartupSessionPage> {
   }
 
   void _navigateToNextPage(BuildContext context) {
-    if (widget.userRole == "pilgrim") {
+    if (widget.userRole.toLowerCase() == "pilgrim") {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => ServicesPage(userRole: widget.userRole),

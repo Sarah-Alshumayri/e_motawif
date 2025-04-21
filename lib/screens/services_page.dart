@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 import 'pilgrim_profile_page.dart';
 import 'sos_emergency_user.dart';
 import 'lost_found_page.dart';
@@ -11,69 +13,25 @@ import 'health_monitoring_page.dart';
 import 'settings_page.dart';
 import 'notifications_page.dart';
 import 'help_page.dart';
-import 'sos_emergency_user.dart';
 import 'notification_service.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../theme_provider.dart';
+import '../l10n/locale_provider.dart';
 
 class ServicesPage extends StatefulWidget {
-  const ServicesPage({Key? key, required String userRole}) : super(key: key);
+  final String userRole;
+
+  const ServicesPage({Key? key, required this.userRole}) : super(key: key);
 
   @override
   _ServicesPageState createState() => _ServicesPageState();
 }
 
 class _ServicesPageState extends State<ServicesPage> {
-  final List<Map<String, dynamic>> services = [
-    {
-      "title": "Startup Session",
-      "icon": Icons.lightbulb,
-      "page": StartupSessionPage(userRole: 'Pilgrim'),
-    },
-    {
-      "title": "Ritual Guidance",
-      "icon": Icons.menu_book,
-      "page": RitualGuidancePage(),
-    },
-    {
-      "title": "Customer Support",
-      "icon": Icons.support_agent,
-      "page": CustomerSupportPage(),
-    },
-    {
-      "title": "Report Lost & Found Items",
-      "icon": Icons.report,
-      "page": LostFoundPage(),
-    },
-    {
-      "title": "Residency Allocation Tracking",
-      "icon": Icons.hotel,
-      "page": ResidencyAllocationPage(userType: 'Pilgrim'),
-    },
-    {
-      "title": "Real-Time Tracking",
-      "icon": Icons.location_on,
-      "page": RealTimeTrackingPage(userRole: 'Pilgrim'),
-    },
-    {
-      "title": "Health Monitoring",
-      "icon": Icons.health_and_safety,
-      "page": HealthMonitoringPage(userRole: 'Pilgrim'),
-    },
-    {
-      "title": "Notifications",
-      "icon": Icons.notifications,
-      "page": NotificationsPage(userRole: 'Pilgrim'),
-    },
-    {
-      "title": "Emergency Service",
-      "icon": Icons.emergency,
-      "page": SOSEmergencyPage(), // ✅ Correct
-    },
-  ];
+  List<Map<String, dynamic>> services = [];
 
   List<Map<String, dynamic>> filteredServices = [];
   List<String> pinnedServices = [];
@@ -82,8 +40,68 @@ class _ServicesPageState extends State<ServicesPage> {
   @override
   void initState() {
     super.initState();
+    _startNotificationListener(); // KEEP THIS
+    // REMOVE _initServices(); from here!
+  }
+
+  void _initServices() {
+    final t = AppLocalizations.of(context)!;
+
+    services = [
+      {
+        "title": t.startupSession,
+        "icon": Icons.lightbulb,
+        "page": StartupSessionPage(userRole: 'Pilgrim'),
+      },
+      {
+        "title": t.ritualGuidance,
+        "icon": Icons.menu_book,
+        "page": RitualGuidancePage(),
+      },
+      {
+        "title": t.customerSupport,
+        "icon": Icons.support_agent,
+        "page": CustomerSupportPage(),
+      },
+      {
+        "title": t.reportLostFound,
+        "icon": Icons.report,
+        "page": LostFoundPage(),
+      },
+      {
+        "title": t.residencyTracking,
+        "icon": Icons.hotel,
+        "page": ResidencyAllocationPage(userType: 'Pilgrim'),
+      },
+      {
+        "title": t.realTimeTracking,
+        "icon": Icons.location_on,
+        "page": RealTimeTrackingPage(userRole: 'Pilgrim'),
+      },
+      {
+        "title": t.healthMonitoring,
+        "icon": Icons.health_and_safety,
+        "page": HealthMonitoringPage(userRole: 'Pilgrim'),
+      },
+      {
+        "title": t.notifications,
+        "icon": Icons.notifications,
+        "page": NotificationsPage(userRole: 'Pilgrim'),
+      },
+      {
+        "title": t.emergencyService,
+        "icon": Icons.emergency,
+        "page": SOSEmergencyPage(),
+      },
+    ];
+
     filteredServices = List.from(services);
-    _startNotificationListener();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _initServices(); // rebuild localized titles
   }
 
   @override
@@ -141,12 +159,15 @@ class _ServicesPageState extends State<ServicesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D4A45),
-        title: const Text("Services", style: TextStyle(color: Colors.white)),
+        title: Text(t.services, style: const TextStyle(color: Colors.white)),
         centerTitle: true,
         elevation: 0,
+        automaticallyImplyLeading: false,
         actions: [
           Stack(
             children: [
@@ -175,7 +196,7 @@ class _ServicesPageState extends State<ServicesPage> {
             ],
           ),
           IconButton(
-            icon: Icon(Icons.account_circle, color: Colors.white),
+            icon: const Icon(Icons.account_circle, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
@@ -193,7 +214,7 @@ class _ServicesPageState extends State<ServicesPage> {
             child: TextField(
               onChanged: filterServices,
               decoration: InputDecoration(
-                hintText: "Search for a service...",
+                hintText: t.searchService,
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10.0),
@@ -291,11 +312,11 @@ class _ServicesPageState extends State<ServicesPage> {
             );
           }
         },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+        items: [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: t.home),
           BottomNavigationBarItem(
-              icon: Icon(Icons.settings), label: "Settings"),
-          BottomNavigationBarItem(icon: Icon(Icons.help), label: "Help"),
+              icon: Icon(Icons.settings), label: t.settings),
+          BottomNavigationBarItem(icon: Icon(Icons.help), label: t.help),
         ],
       ),
     );

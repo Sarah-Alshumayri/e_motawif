@@ -113,6 +113,8 @@ class _LostFoundPageState extends State<LostFoundPage> {
           style: TextStyle(color: Colors.white),
         ),
         backgroundColor: const Color(0xFF0D4A45),
+        iconTheme:
+            IconThemeData(color: Colors.white), // ✅ Makes back arrow white
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
