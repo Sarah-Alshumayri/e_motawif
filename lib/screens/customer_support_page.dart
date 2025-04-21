@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+import 'help_page.dart'; // Make sure this import is present
 
 class CustomerSupportPage extends StatefulWidget {
   @override
@@ -7,21 +8,6 @@ class CustomerSupportPage extends StatefulWidget {
 }
 
 class _CustomerSupportPageState extends State<CustomerSupportPage> {
-  final List<Map<String, String>> faqs = [
-    {
-      'question': 'How do I reset my password?',
-      'answer': 'Go to settings and click on reset password.'
-    },
-    {
-      'question': 'How do I contact support?',
-      'answer': 'You can call, email, or use live chat.'
-    },
-    {
-      'question': 'Where can I track my requests?',
-      'answer': 'Your support tickets can be found in the support section.'
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,30 +31,14 @@ class _CustomerSupportPageState extends State<CustomerSupportPage> {
                 _supportButton(Icons.phone, "Call",
                     () => print("Call Support Placeholder")),
                 _supportButton(Icons.email, "Email", _showEmailPopup),
-                _supportButton(Icons.chat, "Live Chat",
-                    () => print("Live Chat Placeholder")),
+                _supportButton(Icons.chat, "Live Chat", _showLiveChat),
               ],
             ),
-            SizedBox(height: 20),
-            Text("FAQs",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SizedBox(height: 10),
-            Expanded(
-              child: ListView.builder(
-                itemCount: faqs.length,
-                itemBuilder: (context, index) {
-                  return Card(
-                    child: ExpansionTile(
-                      title: Text(faqs[index]['question']!),
-                      children: [
-                        Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Text(faqs[index]['answer']!),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+            SizedBox(height: 30),
+            Center(
+              child: Text(
+                "Need help? Start a chat to get quick answers!",
+                style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic),
               ),
             ),
           ],
@@ -132,6 +102,21 @@ class _CustomerSupportPageState extends State<CustomerSupportPage> {
             child: Text("Close"),
           )
         ],
+      ),
+    );
+  }
+
+  void _showLiveChat() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SizedBox(
+        height: MediaQuery.of(context).size.height * 0.85,
+        child: HelpPage(isEmbedded: true),
       ),
     );
   }

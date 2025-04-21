@@ -28,7 +28,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
     try {
       var response = await http.post(
-        Uri.parse("http://192.168.56.1/e_motawif_new/forgot_password.php"),
+        Uri.parse("http://10.0.2.2/e_motawif_new/forgot_password.php"),
         body: {"user_id": userId, "email": email},
       );
 
