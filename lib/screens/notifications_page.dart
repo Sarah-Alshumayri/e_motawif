@@ -21,11 +21,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
   void initState() {
     super.initState();
     _fetchNotifications();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchNotifications();
+    });
   }
 
   Future<void> _fetchNotifications() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? userId = prefs.getString('user_id');
+    print("🔍 Checking notifications for user_id: $userId");
     if (userId == null) return;
 
     final response = await http.post(
@@ -36,9 +40,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       if (data['success']) {
+        print("📦 Raw notification data: ${data['notifications']}");
+
         setState(() {
           notifications =
               List<Map<String, dynamic>>.from(data['notifications']);
+          notifications.sort((a, b) =>
+              b['timestamp'].compareTo(a['timestamp'])); // Sort by latest
         });
       }
     } else {
@@ -64,6 +72,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
         backgroundColor: primaryColor,
         iconTheme: const IconThemeData(color: Colors.white),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () {
+              _fetchNotifications(); // refresh manually
+            },
+          ),
+        ],
       ),
       backgroundColor: Colors.white,
       body: Padding(
@@ -75,6 +91,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 itemBuilder: (context, index) {
                   final notif = notifications[index];
                   final sender = notif['sender_name'] ?? 'System';
+                  final seen = notif['seen'] == "1" || notif['seen'] == 1;
 
                   return Card(
                     elevation: 3,
@@ -83,8 +100,18 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: ListTile(
-                      leading:
+                      leading: Stack(
+                        children: [
                           const Icon(Icons.notifications, color: Colors.teal),
+                          if (!seen)
+                            const Positioned(
+                              right: 0,
+                              top: 0,
+                              child: Icon(Icons.circle,
+                                  size: 10, color: Colors.green),
+                            )
+                        ],
+                      ),
                       title: Text(
                         notif['title'] ?? 'Notification',
                         style: const TextStyle(
@@ -95,19 +122,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "From: $sender",
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
+                          Text("From: $sender",
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w600)),
                           const SizedBox(height: 4),
                           Text(notif['message'] ?? ''),
                           const SizedBox(height: 6),
                           Text(
                             _formatTimestamp(notif['timestamp'] ?? ''),
                             style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.black54,
-                            ),
+                                fontSize: 12, color: Colors.black54),
                           ),
                         ],
                       ),

@@ -137,15 +137,6 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
     );
   }
 
-  void checkOutOfBounds() {
-    setState(() {
-      isOutOfBounds = !isOutOfBounds;
-      locationStatus = isOutOfBounds
-          ? "Out of bounds! Return to the safe zone."
-          : "Within safe zone";
-    });
-  }
-
   void _clearMovementHistory() {
     setState(() {
       movementHistory.clear();
@@ -250,22 +241,18 @@ class _RealTimeTrackingPageState extends State<RealTimeTrackingPage> {
               ),
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: toggleTracking,
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: isTrackingActive ? Colors.red : Colors.teal),
-              child: Text(
-                isTrackingActive ? "Stop Tracking" : "Start Tracking",
-                style: TextStyle(color: Colors.white),
+            if (widget.userRole.toLowerCase() == 'pilgrim')
+              ElevatedButton(
+                onPressed: toggleTracking,
+                style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        isTrackingActive ? Colors.red : Colors.teal),
+                child: Text(
+                  isTrackingActive ? "Stop Tracking" : "Start Tracking",
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
-            ),
             SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: checkOutOfBounds,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-              child: Text("Simulate Out of Bounds",
-                  style: TextStyle(color: Colors.white)),
-            ),
             SizedBox(height: 20),
             Expanded(
               child: widget.userRole.toLowerCase() == 'pilgrim'

@@ -98,6 +98,7 @@ class _ChatPageState extends State<ChatPage> {
         "sender": "You"
       });
     });
+    _scrollToBottom(); // ✅ add this line
 
     // 🔹 Send the message to backend
     final messageUrl =
@@ -152,67 +153,102 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100], // Light background
       appBar: AppBar(
-        title: Text(widget.pilgrimName,
-            style: const TextStyle(color: Colors.white)),
+        title: Text(
+          widget.pilgrimName,
+          style: const TextStyle(color: Colors.white),
+        ),
         backgroundColor: primaryColor,
+        elevation: 2,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(12),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                final isMe = message['isMe'];
+            child: _messages.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No messages yet',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(12),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final message = _messages[index];
+                      final isMe = message['isMe'];
 
-                return Align(
-                  alignment:
-                      isMe ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 10, horizontal: 14),
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.75),
-                    decoration: BoxDecoration(
-                      color: isMe
-                          ? primaryColor.withOpacity(0.9)
-                          : Colors.grey[200],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          message['text'],
-                          style: TextStyle(
-                            color: isMe ? Colors.white : Colors.black87,
-                            fontSize: 16,
+                      return Align(
+                        alignment:
+                            isMe ? Alignment.centerRight : Alignment.centerLeft,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 10, horizontal: 14),
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width * 0.75,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isMe
+                                ? primaryColor.withOpacity(0.9)
+                                : Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black12,
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
+                              )
+                            ],
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(12),
+                              topRight: Radius.circular(12),
+                              bottomLeft:
+                                  isMe ? Radius.circular(12) : Radius.zero,
+                              bottomRight:
+                                  isMe ? Radius.zero : Radius.circular(12),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                message['text'],
+                                style: TextStyle(
+                                  color: isMe ? Colors.white : Colors.black87,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "${message['sender']} • ${_formatTimestamp(message['timestamp'])}",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: isMe ? Colors.white70 : Colors.black54,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "${message['sender']} • ${_formatTimestamp(message['timestamp'])}",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isMe ? Colors.white70 : Colors.black54,
-                          ),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           const Divider(height: 1),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            color: Colors.grey[100],
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 4,
+                  offset: Offset(0, -2),
+                )
+              ],
+            ),
             child: Row(
               children: [
                 Expanded(
@@ -226,7 +262,7 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.send, color: Color(0xFF0D4A45)),
+                  icon: Icon(Icons.send, color: primaryColor),
                   onPressed: _sendMessage,
                 ),
               ],

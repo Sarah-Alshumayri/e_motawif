@@ -24,35 +24,25 @@ class _SOSEmergencyMotawifPageState extends State<SOSEmergencyMotawifPage> {
 
   Future<void> _loadData() async {
     setState(() => isLoading = true);
-    await _getMotawifLocation(); // Step 1: Get location
-    await fetchSOSAlerts(); // Step 2: Get SOS alerts
+    await _getMotawifLocation();
+    await fetchSOSAlerts();
   }
 
   Future<void> _getMotawifLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        print("❌ Location services disabled.");
-        return;
-      }
+      if (!serviceEnabled) return;
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
       }
-
       if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        print("❌ Location permissions denied.");
-        return;
-      }
+          permission == LocationPermission.deniedForever) return;
 
       motawifLocation = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-
-      print(
-          "📍 Got location: ${motawifLocation!.latitude}, ${motawifLocation!.longitude}");
     } catch (e) {
       print("⚠️ Error getting location: $e");
     }
@@ -61,42 +51,46 @@ class _SOSEmergencyMotawifPageState extends State<SOSEmergencyMotawifPage> {
   Future<void> fetchSOSAlerts() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final motawifId = prefs.getInt('user_id');
+      final externalId = prefs.getString('user_id');
 
-      if (motawifId == null) {
-        print("❌ No Motawif ID found");
+      if (externalId == null) {
+        print("❌ No Motawif user_id in SharedPreferences");
         setState(() => isLoading = false);
         return;
       }
 
-      final url = Uri.parse("http://10.0.2.2/e_motawif_new/get_sos_alerts.php");
-      final response = await http.post(url, body: {
-        'motawif_id': motawifId.toString(),
-      });
+      final internalIdRes = await http.post(
+        Uri.parse("http://10.0.2.2/e_motawif_new/get_internal_id.php"),
+        body: {'user_id': externalId},
+      );
+
+      final internalIdJson = jsonDecode(internalIdRes.body);
+      if (!internalIdJson['success']) {
+        print("❌ Failed to fetch internal ID");
+        setState(() => isLoading = false);
+        return;
+      }
+
+      final motawifId = internalIdJson['id'].toString();
+      final response = await http.post(
+        Uri.parse("http://10.0.2.2/e_motawif_new/get_sos_alerts.php"),
+        body: {'motawif_id': motawifId},
+      );
 
       final jsonResponse = jsonDecode(response.body);
-      print("📦 SOS Alerts Response: $jsonResponse");
       if (!jsonResponse['success']) {
         throw Exception("Failed to fetch alerts");
       }
 
       final List<dynamic> alerts = jsonResponse['data'];
 
-      // 🌍 Calculate distance if location is available
       if (motawifLocation != null) {
         for (var alert in alerts) {
-          final double lat =
-              double.tryParse(alert['latitude'].toString()) ?? 0.0;
-          final double lng =
-              double.tryParse(alert['longitude'].toString()) ?? 0.0;
-
-          double distanceInMeters = Geolocator.distanceBetween(
-            motawifLocation!.latitude,
-            motawifLocation!.longitude,
-            lat,
-            lng,
-          );
-          alert['distance'] = (distanceInMeters / 1000).toStringAsFixed(2);
+          final lat = double.tryParse(alert['latitude'].toString()) ?? 0.0;
+          final lng = double.tryParse(alert['longitude'].toString()) ?? 0.0;
+          double distance = Geolocator.distanceBetween(
+              motawifLocation!.latitude, motawifLocation!.longitude, lat, lng);
+          alert['distance'] = (distance / 1000).toStringAsFixed(2);
         }
       } else {
         for (var alert in alerts) {
@@ -118,27 +112,24 @@ class _SOSEmergencyMotawifPageState extends State<SOSEmergencyMotawifPage> {
     final alert = sosRequests[index];
     final alertId = alert['id'];
 
-    final url =
-        Uri.parse("http://10.0.2.2/e_motawif_new/resolve_sos_alert.php");
+    final response = await http.post(
+      Uri.parse("http://10.0.2.2/e_motawif_new/resolve_sos_alert.php"),
+      body: {'id': alertId.toString()},
+    );
 
-    try {
-      final response = await http.post(url, body: {'id': alertId.toString()});
-      final json = jsonDecode(response.body);
+    final json = jsonDecode(response.body);
 
-      if (json['success']) {
-        setState(() {
-          sosRequests[index]['status'] = "Resolved";
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("✅ SOS marked as resolved")),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ Failed: ${json['message']}")),
-        );
-      }
-    } catch (e) {
-      print("❌ Error resolving SOS: $e");
+    if (json['success']) {
+      setState(() {
+        sosRequests[index]['status'] = "Resolved";
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("✅ SOS marked as resolved")),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("❌ Failed: ${json['message']}")),
+      );
     }
   }
 
@@ -152,11 +143,8 @@ class _SOSEmergencyMotawifPageState extends State<SOSEmergencyMotawifPage> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => SOSMapView(
-            latitude: lat,
-            longitude: lng,
-            message: message,
-          ),
+          builder: (_) =>
+              SOSMapView(latitude: lat, longitude: lng, message: message),
         ),
       );
     } else {
@@ -174,8 +162,18 @@ class _SOSEmergencyMotawifPageState extends State<SOSEmergencyMotawifPage> {
         title: Text("SOS Emergency - Motawif",
             style: TextStyle(color: Colors.white)),
         centerTitle: true,
+<<<<<<< Updated upstream
         iconTheme:
             IconThemeData(color: Colors.white), // ✅ Makes back arrow white
+=======
+        actions: [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            tooltip: "Refresh Alerts",
+            onPressed: _loadData,
+          ),
+        ],
+>>>>>>> Stashed changes
       ),
       backgroundColor: Colors.white,
       body: isLoading
@@ -210,9 +208,29 @@ class _SOSEmergencyMotawifPageState extends State<SOSEmergencyMotawifPage> {
                                         SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
-                                            "Pilgrim ID: ${sos['pilgrim_id']}",
+                                            "Pilgrim: ${sos['pilgrim_name'] ?? sos['pilgrim_id']}",
                                             style: TextStyle(
                                                 fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: sos['status'] == "Resolved"
+                                                ? Colors.green[100]
+                                                : Colors.red[100],
+                                            borderRadius:
+                                                BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            sos['status'],
+                                            style: TextStyle(
+                                              color: sos['status'] == "Resolved"
+                                                  ? Colors.green
+                                                  : Colors.red,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
                                       ],

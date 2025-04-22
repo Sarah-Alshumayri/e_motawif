@@ -18,7 +18,6 @@ class _SOSEmergencyPageState extends State<SOSEmergencyPage> {
     });
 
     try {
-      // 🔐 Check if location service is enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -27,7 +26,6 @@ class _SOSEmergencyPageState extends State<SOSEmergencyPage> {
         return;
       }
 
-      // 📲 Check and request permission
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -47,33 +45,45 @@ class _SOSEmergencyPageState extends State<SOSEmergencyPage> {
         return;
       }
 
-      // ✅ Now safe to get location
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
       SharedPreferences prefs = await SharedPreferences.getInstance();
       dynamic rawId = prefs.get('user_id');
-      int? userId = rawId is int ? rawId : int.tryParse(rawId.toString());
+      String? userId = rawId?.toString();
 
       if (userId == null) {
-        throw Exception("User ID not found in local storage");
+        throw Exception("User ID not found");
       }
 
-      final response = await http.post(
+      final sosResponse = await http.post(
         Uri.parse('http://10.0.2.2/e_motawif_new/send_emergency_alert.php'),
         body: {
-          'user_id': userId.toString(), // updated from 'user_id'
+          'user_id': userId,
           'latitude': position.latitude.toString(),
           'longitude': position.longitude.toString(),
           'message': message,
         },
       );
 
-      final json = jsonDecode(response.body);
-      if (json['success']) {
+      final jsonSos = jsonDecode(sosResponse.body);
+
+      if (jsonSos['success']) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("🚨 SOS sent: $message")),
+        );
+
+        // 🔔 Send notification to assigned Motawif
+        await http.post(
+          Uri.parse('http://10.0.2.2/e_motawif_new/send_notification.php'),
+          body: {
+            'user_id': userId,
+            'target_role':
+                'motawif', // Backend handles routing based on assignment
+            'title': '🚨 SOS Alert',
+            'message': message,
+          },
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -108,13 +118,11 @@ class _SOSEmergencyPageState extends State<SOSEmergencyPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              "Emergency Assistance",
-              style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black),
-            ),
+            Text("Emergency Assistance",
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black)),
             SizedBox(height: 10),
             Text(
               "If you are in danger or need urgent help, press the button below.",
@@ -132,13 +140,12 @@ class _SOSEmergencyPageState extends State<SOSEmergencyPage> {
               child: Icon(Icons.warning, size: 50, color: Colors.white),
             ),
             SizedBox(height: 20),
-            isAlertSent
-                ? Text("SOS Alert Sent! Help is on the way.",
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red))
-                : Container(),
+            if (isAlertSent)
+              Text("SOS Alert Sent! Help is on the way.",
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red)),
             SizedBox(height: 40),
             Divider(),
             SizedBox(height: 20),
@@ -172,7 +179,7 @@ class _SOSEmergencyPageState extends State<SOSEmergencyPage> {
         IconButton(
           icon: Icon(icon, size: 40, color: Colors.teal),
           onPressed: () {
-            // Later: implement emergency call or contact info
+            // Optional: emergency dialer
           },
         ),
         Text(label),

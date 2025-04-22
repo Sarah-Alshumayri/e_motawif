@@ -9,6 +9,8 @@ import 'login_page.dart';
 import 'services_page.dart';
 import 'motawif_sidebar_menu.dart';
 import 'pilgrim_dashboard_page.dart';
+import 'package:e_motawif_new/database_helper.dart';
+import 'package:geolocator/geolocator.dart';
 
 class StartupSessionPage extends StatefulWidget {
   final String userRole;
@@ -33,11 +35,12 @@ class StartupSessionPageState extends State<StartupSessionPage> {
   @override
   void initState() {
     super.initState();
-    _loadUserName(); // ✅ NEW
+    _loadUserName();
     if (widget.userRole.toLowerCase() == "motawif") {
       fetchAssignedPilgrims();
     } else if (widget.userRole.toLowerCase() == "pilgrim") {
       fetchMotawifNameForPilgrim();
+      _startLocationTracking(); // ✅ Starts tracking immediately for Pilgrims
     }
   }
 
@@ -479,5 +482,45 @@ class StartupSessionPageState extends State<StartupSessionPage> {
         ],
       ),
     );
+  }
+
+  void _startLocationTracking() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse) {
+      Geolocator.getPositionStream(
+        locationSettings: LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 10,
+        ),
+      ).listen((Position position) {
+        _sendLocationToBackend(position.latitude, position.longitude);
+      });
+    }
+  }
+
+  void _sendLocationToBackend(double lat, double lon) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? userId = prefs.getString('user_id');
+    if (userId == null) return;
+
+    final response = await http.post(
+      Uri.parse('${DatabaseHelper.serverUrl}/save_movement.php'),
+      body: {
+        'user_id': userId,
+        'latitude': lat.toString(),
+        'longitude': lon.toString(),
+      },
+    );
+
+    if (response.statusCode == 200) {
+      print("📍 Location saved: ($lat, $lon)");
+    } else {
+      print("❌ Failed to save location");
+    }
   }
 }

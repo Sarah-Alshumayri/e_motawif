@@ -24,23 +24,32 @@ if (empty($internalIds)) {
 
 // Step 2: Convert internal IDs to user_id strings
 $internalIdsStr = implode(",", $internalIds);
-$userIdQuery = "SELECT user_id FROM users WHERE id IN ($internalIdsStr)";
+$userIdQuery = "SELECT id, user_id FROM users WHERE id IN ($internalIdsStr)";
 $userResult = mysqli_query($conn, $userIdQuery);
 
-$userIds = [];
+$userIdMap = []; // key = user_id, value = internal id
 while ($row = mysqli_fetch_assoc($userResult)) {
-    $userIds[] = "'" . mysqli_real_escape_string($conn, $row['user_id']) . "'";
+    $userIdMap[$row['user_id']] = $row['id'];
 }
-
+$userIds = array_keys($userIdMap);
 if (empty($userIds)) {
     echo json_encode(["success" => true, "data" => []]);
     exit;
 }
+$userIdsEscaped = array_map(function($id) use ($conn) {
+    return "'" . mysqli_real_escape_string($conn, $id) . "'";
+}, $userIds);
+$userIdsStr = implode(",", $userIdsEscaped);
 
-$userIdsStr = implode(",", $userIds);
+// ✅ Step 3: Fetch SOS alerts with pilgrim names
+$sosQuery = "
+    SELECT sa.*, u.name AS pilgrim_name 
+    FROM sos_alerts sa 
+    JOIN users u ON sa.pilgrim_id = u.user_id 
+    WHERE sa.pilgrim_id IN ($userIdsStr) 
+      AND sa.status != 'Resolved' 
+    ORDER BY sa.timestamp DESC";
 
-// Step 3: Fetch SOS alerts
-$sosQuery = "SELECT * FROM sos_alerts WHERE pilgrim_id IN ($userIdsStr) AND status != 'Resolved' ORDER BY timestamp DESC";
 $sosResult = mysqli_query($conn, $sosQuery);
 
 $data = [];

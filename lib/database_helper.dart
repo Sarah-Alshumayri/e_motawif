@@ -195,7 +195,8 @@ class DatabaseHelper {
   }
 
   // ✅ Get Assigned Pilgrims for a Motawif
-  Future<Map<String, dynamic>> getAssignedPilgrims(String motawifId) async {
+  static Future<Map<String, dynamic>> getAssignedPilgrims(
+      String motawifId) async {
     final url = Uri.parse(
         "http://10.0.2.2/e_motawif_new/get_pilgrims_for_tracking.php");
 

@@ -12,6 +12,7 @@ import 'settings_page.dart';
 import 'notifications_page.dart';
 import 'help_page.dart';
 import 'task_schedule_page.dart';
+import 'pilgrim_communication_page.dart';
 //import 'tracking_page.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -210,7 +211,7 @@ class _MotawifSidebarMenuState extends State<MotawifSidebarMenu> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => CustomerSupportPage()),
+                  MaterialPageRoute(builder: (_) => PilgrimCommunicationPage()),
                 );
               },
             ),
