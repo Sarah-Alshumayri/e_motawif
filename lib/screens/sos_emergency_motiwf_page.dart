@@ -135,8 +135,8 @@ class _SOSEmergencyMotawifPageState extends State<SOSEmergencyMotawifPage> {
 
   void trackOnMap(int index) {
     final sos = sosRequests[index];
-    final lat = double.tryParse(sos['latitude']);
-    final lng = double.tryParse(sos['longitude']);
+    final lat = double.tryParse(sos['latitude'].toString());
+    final lng = double.tryParse(sos['longitude'].toString());
     final message = sos['message'];
 
     if (lat != null && lng != null) {
@@ -162,8 +162,7 @@ class _SOSEmergencyMotawifPageState extends State<SOSEmergencyMotawifPage> {
         title: Text("SOS Emergency - Motawif",
             style: TextStyle(color: Colors.white)),
         centerTitle: true,
-        iconTheme:
-            IconThemeData(color: Colors.white), // ✅ Makes back arrow white
+        iconTheme: IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
