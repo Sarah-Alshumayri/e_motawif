@@ -162,10 +162,8 @@ class _SOSEmergencyMotawifPageState extends State<SOSEmergencyMotawifPage> {
         title: Text("SOS Emergency - Motawif",
             style: TextStyle(color: Colors.white)),
         centerTitle: true,
-<<<<<<< Updated upstream
         iconTheme:
             IconThemeData(color: Colors.white), // ✅ Makes back arrow white
-=======
         actions: [
           IconButton(
             icon: Icon(Icons.refresh),
@@ -173,7 +171,6 @@ class _SOSEmergencyMotawifPageState extends State<SOSEmergencyMotawifPage> {
             onPressed: _loadData,
           ),
         ],
->>>>>>> Stashed changes
       ),
       backgroundColor: Colors.white,
       body: isLoading

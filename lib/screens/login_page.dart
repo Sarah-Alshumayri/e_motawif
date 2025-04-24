@@ -4,6 +4,7 @@ import 'forgot_password_page.dart';
 import 'startup_session_page.dart';
 import '../database_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'admin_dashboard_page.dart'; // ✅ NEW: import your admin dashboard page
 
 class LoginPage extends StatefulWidget {
   @override
@@ -22,18 +23,28 @@ class _LoginPageState extends State<LoginPage> {
     if (result['status'] == 'success') {
       String role = result['role'].toLowerCase();
       String userId = result['user_id'].toString();
-      String name = result['name'] ?? 'Unknown'; // ✅ get name safely
+      String name = result['name'] ?? 'Unknown';
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_id', userId);
-      await prefs.setString('name', name); // ✅ save name for later use
+      await prefs.setString('name', name);
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => StartupSessionPage(userRole: role),
-        ),
-      );
+      if (role == 'admin') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const AdminDashboardPage(), // ✅ redirect to admin
+          ),
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                StartupSessionPage(userRole: role), // ⛳ for motawif & pilgrim
+          ),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(result['message']),
