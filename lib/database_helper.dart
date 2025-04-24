@@ -395,4 +395,47 @@ class DatabaseHelper {
       return {"success": false, "message": "Connection failed: $e"};
     }
   }
+
+  // update User page for admin dashboard
+  Future<Map<String, dynamic>> updateUser({
+    required String user_id,
+    required String name,
+    required String email,
+    required String role,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse("$serverUrl/update_user.php"),
+        body: {
+          'user_id': user_id,
+          'name': name,
+          'email': email,
+          'role': role,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        return {
+          'success': false,
+          'message': 'Server error: ${response.statusCode}',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Exception: $e',
+      };
+    }
+  }
+
+  // delete User for admin dashboard
+  Future<Map<String, dynamic>> deleteUser(String userId) async {
+    final response = await postData(
+      url: 'delete_user.php',
+      body: {'user_id': userId},
+    );
+    return response ?? {'success': false, 'message': 'Server error'};
+  }
 }
