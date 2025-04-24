@@ -516,7 +516,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
   Widget _buildExportCsvButton() {
     return ElevatedButton.icon(
-      icon: const Icon(Icons.download),
+      icon: const Icon(Icons.download, color: Colors.white),
       label: const Text("Export Assignments as CSV"),
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.teal,
