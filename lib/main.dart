@@ -6,10 +6,10 @@ import 'theme_provider.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'l10n/locale_provider.dart';
+import 'screens/globals.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await NotificationService.init();
 
   runApp(
     MultiProvider(
